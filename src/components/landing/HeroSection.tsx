@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Users, Flame, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const stats = [
   { icon: Users, value: "50K+", label: "Sinh viên" },
@@ -58,9 +59,11 @@ export const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
-              <Button className="btn-gradient-primary border-0 text-base h-12 px-8 group">
-                Bắt đầu học ngay
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              <Button asChild className="btn-gradient-primary border-0 text-base h-12 px-8 group">
+                <Link to="/auth">
+                  Bắt đầu học ngay
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </Button>
               <Button variant="outline" className="h-12 px-8 text-base">
                 Xem demo
