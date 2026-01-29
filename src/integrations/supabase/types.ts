@@ -44,6 +44,71 @@ export type Database = {
         }
         Relationships: []
       }
+      study_room_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          room_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          room_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          room_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_rooms: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_public: boolean
+          max_participants: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          max_participants?: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          max_participants?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

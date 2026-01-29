@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, Moon, Sun, BookOpen } from "lucide-react";
+import { Menu, X, Globe, Moon, Sun, BookOpen, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { name: "Tính năng", href: "#features" },
@@ -13,10 +15,17 @@ const navLinks = [
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
   };
 
   return (
@@ -71,13 +80,27 @@ export const Navbar = () => {
                 <Globe className="w-5 h-5" />
               </Button>
 
-              <Button variant="ghost" className="hidden md:flex">
-                Đăng nhập
-              </Button>
+              {user ? (
+                <>
+                  <span className="hidden md:flex text-sm text-muted-foreground">
+                    {user.email}
+                  </span>
+                  <Button variant="ghost" className="hidden md:flex" onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Đăng xuất
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" className="hidden md:flex" asChild>
+                    <Link to="/auth">Đăng nhập</Link>
+                  </Button>
 
-              <Button className="hidden md:flex btn-gradient-primary border-0">
-                Bắt đầu miễn phí
-              </Button>
+                  <Button className="hidden md:flex btn-gradient-primary border-0" asChild>
+                    <Link to="/auth">Bắt đầu miễn phí</Link>
+                  </Button>
+                </>
+              )}
 
               {/* Mobile Menu Button */}
               <Button
@@ -128,12 +151,21 @@ export const Navbar = () => {
                       <Globe className="w-5 h-5" />
                     </Button>
                   </div>
-                  <Button variant="ghost" className="justify-start">
-                    Đăng nhập
-                  </Button>
-                  <Button className="btn-gradient-primary border-0">
-                    Bắt đầu miễn phí
-                  </Button>
+                  {user ? (
+                    <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Đăng xuất
+                    </Button>
+                  ) : (
+                    <>
+                      <Button variant="ghost" className="justify-start" asChild>
+                        <Link to="/auth" onClick={() => setIsOpen(false)}>Đăng nhập</Link>
+                      </Button>
+                      <Button className="btn-gradient-primary border-0" asChild>
+                        <Link to="/auth" onClick={() => setIsOpen(false)}>Bắt đầu miễn phí</Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </motion.div>
             )}

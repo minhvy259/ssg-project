@@ -94,13 +94,17 @@ export const StudyRoomSection = () => {
             </div>
 
             <div className="flex gap-4">
-              <Button className="btn-gradient-primary border-0">
-                <Unlock className="w-4 h-4 mr-2" />
-                Tham gia phòng công khai
+              <Button className="btn-gradient-primary border-0" asChild>
+                <a href="/study-room">
+                  <Unlock className="w-4 h-4 mr-2" />
+                  Tham gia phòng công khai
+                </a>
               </Button>
-              <Button variant="outline">
-                <Lock className="w-4 h-4 mr-2" />
-                Tạo phòng riêng
+              <Button variant="outline" asChild>
+                <a href="/study-room">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Tạo phòng riêng
+                </a>
               </Button>
             </div>
           </motion.div>
