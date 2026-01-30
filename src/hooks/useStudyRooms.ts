@@ -9,22 +9,30 @@ export interface StudyRoom {
   description: string | null;
   is_public: boolean;
   max_participants: number;
+  current_members: number;
   created_by: string;
   created_at: string;
-  updated_at: string;
+  owner_name: string | null;
 }
 
 export interface Participant {
   id: string;
-  room_id: string;
   user_id: string;
+  role: 'owner' | 'member';
   status: 'focusing' | 'break';
   joined_at: string;
-  profile?: {
-    full_name: string | null;
-    avatar_url: string | null;
-  };
+  full_name: string | null;
+  avatar_url: string | null;
 }
+
+type RpcResponse = {
+  success: boolean;
+  error?: string;
+  room_id?: string;
+  participant_id?: string;
+  room_closed?: boolean;
+  new_owner_id?: string;
+};
 
 export function useStudyRooms() {
   const [rooms, setRooms] = useState<StudyRoom[]>([]);
@@ -32,29 +40,32 @@ export function useStudyRooms() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Fetch public rooms
+  // Fetch active rooms using RPC function
   const fetchRooms = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('study_rooms')
-      .select('*')
-      .eq('is_public', true)
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.rpc('get_active_rooms');
 
     if (error) {
+      console.error('Error fetching rooms:', error);
       toast({
         title: 'Lỗi',
         description: 'Không thể tải danh sách phòng học',
         variant: 'destructive',
       });
+      setRooms([]);
     } else {
-      setRooms(data || []);
+      setRooms((data as StudyRoom[]) || []);
     }
     setLoading(false);
   };
 
-  // Create a new room
-  const createRoom = async (name: string, description: string, isPublic: boolean, maxParticipants: number = 10) => {
+  // Create a new room using RPC function
+  const createRoom = async (
+    name: string, 
+    description: string, 
+    isPublic: boolean, 
+    maxParticipants: number = 10
+  ): Promise<string | null> => {
     if (!user) {
       toast({
         title: 'Lỗi',
@@ -64,22 +75,34 @@ export function useStudyRooms() {
       return null;
     }
 
-    const { data, error } = await supabase
-      .from('study_rooms')
-      .insert({
-        name,
-        description,
-        is_public: isPublic,
-        max_participants: maxParticipants,
-        created_by: user.id,
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc('create_study_room', {
+      p_name: name,
+      p_description: description || null,
+      p_is_public: isPublic,
+      p_max_participants: maxParticipants,
+    });
 
     if (error) {
+      console.error('Error creating room:', error);
       toast({
         title: 'Lỗi',
         description: 'Không thể tạo phòng học',
+        variant: 'destructive',
+      });
+      return null;
+    }
+
+    const result = data as RpcResponse;
+    
+    if (!result.success) {
+      const errorMessages: Record<string, string> = {
+        UNAUTHORIZED: 'Bạn cần đăng nhập',
+        INVALID_NAME: 'Tên phòng phải có ít nhất 3 ký tự',
+        INVALID_MAX_PARTICIPANTS: 'Số người tham gia phải từ 2-50',
+      };
+      toast({
+        title: 'Lỗi',
+        description: errorMessages[result.error || ''] || 'Không thể tạo phòng học',
         variant: 'destructive',
       });
       return null;
@@ -91,11 +114,11 @@ export function useStudyRooms() {
     });
 
     fetchRooms();
-    return data;
+    return result.room_id || null;
   };
 
-  // Join a room
-  const joinRoom = async (roomId: string) => {
+  // Join a room using RPC function
+  const joinRoom = async (roomId: string): Promise<boolean> => {
     if (!user) {
       toast({
         title: 'Lỗi',
@@ -105,19 +128,12 @@ export function useStudyRooms() {
       return false;
     }
 
-    const { error } = await supabase
-      .from('study_room_participants')
-      .insert({
-        room_id: roomId,
-        user_id: user.id,
-        status: 'focusing',
-      });
+    const { data, error } = await supabase.rpc('join_study_room', {
+      p_room_id: roomId,
+    });
 
     if (error) {
-      if (error.code === '23505') {
-        // Already in room
-        return true;
-      }
+      console.error('Error joining room:', error);
       toast({
         title: 'Lỗi',
         description: 'Không thể tham gia phòng học',
@@ -126,20 +142,41 @@ export function useStudyRooms() {
       return false;
     }
 
+    const result = data as RpcResponse;
+    
+    if (!result.success) {
+      const errorMessages: Record<string, string> = {
+        UNAUTHORIZED: 'Bạn cần đăng nhập',
+        ROOM_NOT_FOUND: 'Phòng học không tồn tại',
+        ROOM_CLOSED: 'Phòng học đã đóng',
+        ALREADY_IN_ROOM: 'Bạn đã ở trong phòng này',
+        ROOM_FULL: 'Phòng học đã đầy',
+      };
+      
+      // Don't show error if already in room (that's fine)
+      if (result.error !== 'ALREADY_IN_ROOM') {
+        toast({
+          title: 'Lỗi',
+          description: errorMessages[result.error || ''] || 'Không thể tham gia phòng học',
+          variant: 'destructive',
+        });
+      }
+      return result.error === 'ALREADY_IN_ROOM';
+    }
+
     return true;
   };
 
-  // Leave a room
-  const leaveRoom = async (roomId: string) => {
+  // Leave a room using RPC function
+  const leaveRoom = async (roomId: string): Promise<boolean> => {
     if (!user) return false;
 
-    const { error } = await supabase
-      .from('study_room_participants')
-      .delete()
-      .eq('room_id', roomId)
-      .eq('user_id', user.id);
+    const { data, error } = await supabase.rpc('leave_study_room', {
+      p_room_id: roomId,
+    });
 
     if (error) {
+      console.error('Error leaving room:', error);
       toast({
         title: 'Lỗi',
         description: 'Không thể rời phòng học',
@@ -148,20 +185,38 @@ export function useStudyRooms() {
       return false;
     }
 
+    const result = data as RpcResponse;
+    
+    if (!result.success) {
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể rời phòng học',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    if (result.room_closed) {
+      toast({
+        title: 'Thông báo',
+        description: 'Phòng học đã được đóng do không còn thành viên',
+      });
+    }
+
     return true;
   };
 
-  // Update status (focusing/break)
-  const updateStatus = async (roomId: string, status: 'focusing' | 'break') => {
+  // Update status (focusing/break) using RPC function
+  const updateStatus = async (roomId: string, status: 'focusing' | 'break'): Promise<boolean> => {
     if (!user) return false;
 
-    const { error } = await supabase
-      .from('study_room_participants')
-      .update({ status })
-      .eq('room_id', roomId)
-      .eq('user_id', user.id);
+    const { data, error } = await supabase.rpc('update_focus_status', {
+      p_room_id: roomId,
+      p_status: status,
+    });
 
     if (error) {
+      console.error('Error updating status:', error);
       toast({
         title: 'Lỗi',
         description: 'Không thể cập nhật trạng thái',
@@ -170,7 +225,8 @@ export function useStudyRooms() {
       return false;
     }
 
-    return true;
+    const result = data as RpcResponse;
+    return result.success;
   };
 
   useEffect(() => {
@@ -220,32 +276,18 @@ export function useRoomParticipants(roomId: string | null) {
     }
 
     setLoading(true);
-    // First fetch participants
-    const { data: participantsData, error } = await supabase
-      .from('study_room_participants')
-      .select('*')
-      .eq('room_id', roomId);
+    
+    // Use RPC function to get participants safely (without email)
+    const { data, error } = await supabase.rpc('get_room_participants', {
+      p_room_id: roomId,
+    });
 
-    if (error || !participantsData) {
-      setLoading(false);
-      return;
+    if (error) {
+      console.error('Error fetching participants:', error);
+      setParticipants([]);
+    } else {
+      setParticipants((data as Participant[]) || []);
     }
-
-    // Then fetch profiles for each participant
-    const userIds = participantsData.map(p => p.user_id);
-    const { data: profilesData } = await supabase
-      .from('profiles')
-      .select('user_id, full_name, avatar_url')
-      .in('user_id', userIds);
-
-    // Merge data
-    const merged = participantsData.map(p => ({
-      ...p,
-      status: p.status as 'focusing' | 'break',
-      profile: profilesData?.find(pr => pr.user_id === p.user_id) || null,
-    }));
-
-    setParticipants(merged as Participant[]);
     setLoading(false);
   };
 

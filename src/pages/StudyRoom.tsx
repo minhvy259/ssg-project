@@ -42,7 +42,18 @@ export default function StudyRoom() {
           .maybeSingle();
         
         if (data) {
-          setCurrentRoom(data);
+          // Map database response to StudyRoom type
+          setCurrentRoom({
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            is_public: data.is_public,
+            max_participants: data.max_participants,
+            current_members: data.current_members,
+            created_by: data.created_by,
+            created_at: data.created_at,
+            owner_name: null, // Will be fetched separately if needed
+          });
           // Auto-join room when visiting
           if (user) {
             joinRoom(roomId);
@@ -79,12 +90,12 @@ export default function StudyRoom() {
   const handleCreateRoom = async () => {
     if (!newRoomName.trim()) return;
     
-    const room = await createRoom(newRoomName, newRoomDesc, newRoomPublic);
-    if (room) {
+    const roomId = await createRoom(newRoomName, newRoomDesc, newRoomPublic);
+    if (roomId) {
       setCreateDialogOpen(false);
       setNewRoomName('');
       setNewRoomDesc('');
-      navigate(`/study-room/${room.id}`);
+      navigate(`/study-room/${roomId}`);
     }
   };
 
@@ -328,7 +339,7 @@ export default function StudyRoom() {
                           className="w-10 h-10 rounded-full flex items-center justify-center text-primary-foreground font-medium"
                           style={{ background: 'var(--gradient-primary)' }}
                         >
-                          {p.profile?.full_name?.[0]?.toUpperCase() || '?'}
+                          {p.full_name?.[0]?.toUpperCase() || '?'}
                         </div>
                         <div 
                           className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card flex items-center justify-center text-xs ${
@@ -340,7 +351,7 @@ export default function StudyRoom() {
                       </div>
                       <div>
                         <div className="font-medium text-sm">
-                          {p.profile?.full_name || 'Anonymous'}
+                          {p.full_name || 'Anonymous'}
                           {p.user_id === user?.id && ' (Bạn)'}
                         </div>
                         <div className="text-xs text-muted-foreground capitalize">
