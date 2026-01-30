@@ -44,10 +44,46 @@ export type Database = {
         }
         Relationships: []
       }
+      room_activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_activity_logs_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_room_participants: {
         Row: {
           id: string
           joined_at: string
+          role: string
           room_id: string
           status: string
           user_id: string
@@ -55,6 +91,7 @@ export type Database = {
         Insert: {
           id?: string
           joined_at?: string
+          role?: string
           room_id: string
           status?: string
           user_id: string
@@ -62,6 +99,7 @@ export type Database = {
         Update: {
           id?: string
           joined_at?: string
+          role?: string
           room_id?: string
           status?: string
           user_id?: string
@@ -80,31 +118,37 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          current_members: number
           description: string | null
           id: string
           is_public: boolean
           max_participants: number
           name: string
+          room_status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          current_members?: number
           description?: string | null
           id?: string
           is_public?: boolean
           max_participants?: number
           name: string
+          room_status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          current_members?: number
           description?: string | null
           id?: string
           is_public?: boolean
           max_participants?: number
           name?: string
+          room_status?: string
           updated_at?: string
         }
         Relationships: []
@@ -114,7 +158,40 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_user_join_room: {
+        Args: { p_room_id: string; p_user_id: string }
+        Returns: Json
+      }
+      create_study_room: {
+        Args: {
+          p_description?: string
+          p_is_public?: boolean
+          p_max_participants?: number
+          p_name: string
+        }
+        Returns: Json
+      }
+      get_active_rooms: {
+        Args: never
+        Returns: {
+          created_at: string
+          created_by: string
+          current_members: number
+          description: string
+          id: string
+          is_public: boolean
+          max_participants: number
+          name: string
+          owner_name: string
+        }[]
+      }
+      get_room_member_count: { Args: { p_room_id: string }; Returns: number }
+      join_study_room: { Args: { p_room_id: string }; Returns: Json }
+      leave_study_room: { Args: { p_room_id: string }; Returns: Json }
+      update_focus_status: {
+        Args: { p_room_id: string; p_status: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
