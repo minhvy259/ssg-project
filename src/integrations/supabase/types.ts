@@ -155,7 +155,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          full_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          full_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          full_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_user_join_room: {
@@ -186,6 +203,18 @@ export type Database = {
         }[]
       }
       get_room_member_count: { Args: { p_room_id: string }; Returns: number }
+      get_room_participants: {
+        Args: { p_room_id: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          joined_at: string
+          role: string
+          status: string
+          user_id: string
+        }[]
+      }
       join_study_room: { Args: { p_room_id: string }; Returns: Json }
       leave_study_room: { Args: { p_room_id: string }; Returns: Json }
       update_focus_status: {
