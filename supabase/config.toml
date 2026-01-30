@@ -1,1 +1,4 @@
 project_id = "qxwwwgbhqgnmbbnjqluu"
+
+[functions.study-rooms]
+verify_jwt = false
