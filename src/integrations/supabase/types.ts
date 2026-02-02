@@ -14,6 +14,328 @@ export type Database = {
   }
   public: {
     Tables: {
+      forum_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          post_count: number | null
+          slug: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          post_count?: number | null
+          slug: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          post_count?: number | null
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "forum_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_comment_votes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+          vote_type: number
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          vote_type: number
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          vote_type?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "forum_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          downvotes: number | null
+          id: string
+          is_accepted: boolean | null
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+          upvotes: number | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          downvotes?: number | null
+          id?: string
+          is_accepted?: boolean | null
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+          upvotes?: number | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          downvotes?: number | null
+          id?: string
+          is_accepted?: boolean | null
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+          upvotes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "forum_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_post_tags: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_post_tags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_post_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "forum_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_post_votes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+          vote_type: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+          vote_type: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+          vote_type?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_post_votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_posts: {
+        Row: {
+          author_id: string
+          category_id: string | null
+          comment_count: number | null
+          content: string
+          created_at: string
+          downvotes: number | null
+          excerpt: string | null
+          id: string
+          is_locked: boolean | null
+          is_pinned: boolean | null
+          language: Database["public"]["Enums"]["content_language"] | null
+          status: Database["public"]["Enums"]["post_status"] | null
+          title: string
+          updated_at: string
+          upvotes: number | null
+          view_count: number | null
+        }
+        Insert: {
+          author_id: string
+          category_id?: string | null
+          comment_count?: number | null
+          content: string
+          created_at?: string
+          downvotes?: number | null
+          excerpt?: string | null
+          id?: string
+          is_locked?: boolean | null
+          is_pinned?: boolean | null
+          language?: Database["public"]["Enums"]["content_language"] | null
+          status?: Database["public"]["Enums"]["post_status"] | null
+          title: string
+          updated_at?: string
+          upvotes?: number | null
+          view_count?: number | null
+        }
+        Update: {
+          author_id?: string
+          category_id?: string | null
+          comment_count?: number | null
+          content?: string
+          created_at?: string
+          downvotes?: number | null
+          excerpt?: string | null
+          id?: string
+          is_locked?: boolean | null
+          is_pinned?: boolean | null
+          language?: Database["public"]["Enums"]["content_language"] | null
+          status?: Database["public"]["Enums"]["post_status"] | null
+          title?: string
+          updated_at?: string
+          upvotes?: number | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "forum_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_saved_posts: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_saved_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -179,6 +501,16 @@ export type Database = {
         Args: { p_room_id: string; p_user_id: string }
         Returns: Json
       }
+      create_forum_post: {
+        Args: {
+          p_category_id?: string
+          p_content: string
+          p_language?: string
+          p_tags?: string[]
+          p_title: string
+        }
+        Returns: Json
+      }
       create_study_room: {
         Args: {
           p_description?: string
@@ -202,6 +534,39 @@ export type Database = {
           owner_name: string
         }[]
       }
+      get_forum_posts: {
+        Args: {
+          p_author_id?: string
+          p_category_id?: string
+          p_language?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_sort?: string
+          p_tag_slug?: string
+        }
+        Returns: {
+          author_avatar: string
+          author_id: string
+          author_name: string
+          category_color: string
+          category_id: string
+          category_name: string
+          category_slug: string
+          comment_count: number
+          created_at: string
+          downvotes: number
+          excerpt: string
+          id: string
+          is_pinned: boolean
+          language: Database["public"]["Enums"]["content_language"]
+          tags: Json
+          title: string
+          upvotes: number
+          user_vote: number
+          view_count: number
+        }[]
+      }
       get_room_member_count: { Args: { p_room_id: string }; Returns: number }
       get_room_participants: {
         Args: { p_room_id: string }
@@ -215,15 +580,55 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_saved_posts: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          author_avatar: string
+          author_id: string
+          author_name: string
+          category_color: string
+          category_id: string
+          category_name: string
+          category_slug: string
+          comment_count: number
+          created_at: string
+          downvotes: number
+          excerpt: string
+          id: string
+          is_pinned: boolean
+          language: Database["public"]["Enums"]["content_language"]
+          saved_at: string
+          tags: Json
+          title: string
+          upvotes: number
+          user_vote: number
+          view_count: number
+        }[]
+      }
       join_study_room: { Args: { p_room_id: string }; Returns: Json }
       leave_study_room: { Args: { p_room_id: string }; Returns: Json }
+      toggle_save_post: { Args: { p_post_id: string }; Returns: Json }
       update_focus_status: {
         Args: { p_room_id: string; p_status: string }
         Returns: Json
       }
+      vote_on_post: {
+        Args: { p_post_id: string; p_vote_type: number }
+        Returns: Json
+      }
     }
     Enums: {
-      [_ in never]: never
+      content_language:
+        | "en"
+        | "vi"
+        | "es"
+        | "ja"
+        | "ko"
+        | "zh"
+        | "fr"
+        | "de"
+        | "other"
+      post_status: "published" | "draft" | "archived" | "flagged"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -350,6 +755,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      content_language: [
+        "en",
+        "vi",
+        "es",
+        "ja",
+        "ko",
+        "zh",
+        "fr",
+        "de",
+        "other",
+      ],
+      post_status: ["published", "draft", "archived", "flagged"],
+    },
   },
 } as const
