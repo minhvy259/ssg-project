@@ -497,8 +497,13 @@ export type Database = {
       }
     }
     Functions: {
+      accept_comment: { Args: { p_comment_id: string }; Returns: Json }
       can_user_join_room: {
         Args: { p_room_id: string; p_user_id: string }
+        Returns: Json
+      }
+      create_comment: {
+        Args: { p_content: string; p_parent_id?: string; p_post_id: string }
         Returns: Json
       }
       create_forum_post: {
@@ -520,6 +525,7 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_comment: { Args: { p_comment_id: string }; Returns: Json }
       get_active_rooms: {
         Args: never
         Returns: {
@@ -534,6 +540,7 @@ export type Database = {
           owner_name: string
         }[]
       }
+      get_forum_post_detail: { Args: { p_post_id: string }; Returns: Json }
       get_forum_posts: {
         Args: {
           p_author_id?: string
@@ -565,6 +572,26 @@ export type Database = {
           upvotes: number
           user_vote: number
           view_count: number
+        }[]
+      }
+      get_post_comments: {
+        Args: { p_post_id: string; p_sort?: string }
+        Returns: {
+          author_avatar: string
+          author_id: string
+          author_name: string
+          content: string
+          created_at: string
+          depth: number
+          downvotes: number
+          id: string
+          is_accepted: boolean
+          is_author: boolean
+          parent_id: string
+          reply_count: number
+          updated_at: string
+          upvotes: number
+          user_vote: number
         }[]
       }
       get_room_member_count: { Args: { p_room_id: string }; Returns: number }
@@ -610,6 +637,10 @@ export type Database = {
       toggle_save_post: { Args: { p_post_id: string }; Returns: Json }
       update_focus_status: {
         Args: { p_room_id: string; p_status: string }
+        Returns: Json
+      }
+      vote_on_comment: {
+        Args: { p_comment_id: string; p_vote_type: number }
         Returns: Json
       }
       vote_on_post: {

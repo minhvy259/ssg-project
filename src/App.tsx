@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import StudyRoom from "./pages/StudyRoom";
 import Forum from "./pages/Forum";
+import PostDetail from "./pages/PostDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/study-room" element={<StudyRoom />} />
             <Route path="/study-room/:roomId" element={<StudyRoom />} />
             <Route path="/forum" element={<Forum />} />
+            <Route path="/forum/post/:postId" element={<PostDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
