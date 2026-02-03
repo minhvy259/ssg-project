@@ -1,5 +1,19 @@
 # Welcome to your Lovable project
 
+## 🤖 Chatbot AI – Setup nhanh
+
+Để **chatbot hoạt động** (phần "Gia sư AI" trên trang chủ), làm **1 lần**:
+
+1. Cài Supabase CLI: `npm install -g supabase` → chạy `supabase login`
+2. Chạy script (thay `sk-xxx` bằng [OpenAI API Key](https://platform.openai.com/api-keys)):
+   ```powershell
+   .\scripts\setup-chatbot.ps1 -OpenAIKey "sk-xxx"
+   ```
+
+Chi tiết: **[SETUP_CHATBOT.md](./SETUP_CHATBOT.md)**
+
+---
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID

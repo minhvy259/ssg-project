@@ -1,4 +1,7 @@
 project_id = "qxwwwgbhqgnmbbnjqluu"
 
+[functions.chat-gpt]
+verify_jwt = false
+
 [functions.study-rooms]
 verify_jwt = false

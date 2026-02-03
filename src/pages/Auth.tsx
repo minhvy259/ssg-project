@@ -91,7 +91,7 @@ export default function Auth() {
             title: 'Đăng nhập thành công!',
             description: 'Chào mừng bạn trở lại',
           });
-          navigate('/dashboard');
+          navigate(from, { replace: true });
         }
       } else {
         const { error } = await signUp(email, password, fullName || undefined);
@@ -115,7 +115,7 @@ export default function Auth() {
             title: 'Đăng ký thành công!',
             description: 'Chào mừng bạn đến với StudyVerse',
           });
-          navigate('/dashboard');
+          navigate(from, { replace: true });
         }
       }
     } catch (error) {

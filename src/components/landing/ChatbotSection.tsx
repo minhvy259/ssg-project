@@ -1,19 +1,7 @@
 import { motion } from "framer-motion";
-import { Bot, Send, Sparkles, Languages, BookOpen, Brain } from "lucide-react";
-import { useState } from "react";
+import { Bot, Languages, BookOpen, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const messages = [
-  {
-    role: "user",
-    content: "Explain the concept of derivatives in simple terms",
-    lang: "🇺🇸",
-  },
-  {
-    role: "bot",
-    content: "Think of a derivative as measuring how fast something changes! 📈\n\nImagine you're driving a car. Your speedometer shows how fast your position changes - that's a derivative! If you're going 60 km/h, your position changes by 60 km every hour.\n\nIn math: derivative = (small change in output) ÷ (small change in input)\n\nWant me to show you some examples? 🎯",
-  },
-];
+import { ChatBot } from "@/components/ChatBot";
 
 const capabilities = [
   { icon: Languages, label: "Đa ngôn ngữ", desc: "50+ ngôn ngữ" },
@@ -22,10 +10,8 @@ const capabilities = [
 ];
 
 export const ChatbotSection = () => {
-  const [inputValue, setInputValue] = useState("");
-
   return (
-    <section className="py-24 px-4 relative overflow-hidden">
+    <section className="py-24 px-4 relative overflow-hidden" data-chatbot-section>
       {/* Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-secondary/5 rounded-full blur-3xl" />
@@ -33,7 +19,7 @@ export const ChatbotSection = () => {
 
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left - Chat Preview */}
+          {/* Left - Chatbot thật (AI Tutor) */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -41,72 +27,9 @@ export const ChatbotSection = () => {
             transition={{ duration: 0.6 }}
             className="order-2 lg:order-1"
           >
-            <div className="glass-card rounded-3xl overflow-hidden">
-              {/* Chat Header */}
-              <div className="p-4 flex items-center gap-3" style={{ background: "var(--gradient-secondary)" }}>
-                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-secondary-foreground" />
-                </div>
-                <div className="text-secondary-foreground">
-                  <div className="font-display font-semibold">StudyBot AI</div>
-                  <div className="text-sm text-secondary-foreground/80 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-primary" />
-                    Luôn sẵn sàng hỗ trợ
-                  </div>
-                </div>
-                <div className="ml-auto flex items-center gap-2 text-secondary-foreground/80 text-sm">
-                  <Languages className="w-4 h-4" />
-                  <span>EN</span>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="p-4 space-y-4 min-h-[300px]">
-                {messages.map((msg, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.2 }}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[85%] p-4 rounded-2xl ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-br-md"
-                          : "bg-muted rounded-bl-md"
-                      }`}
-                    >
-                      {msg.role === "user" && (
-                        <div className="text-xs opacity-70 mb-1">{msg.lang}</div>
-                      )}
-                      <p className="text-sm whitespace-pre-line">{msg.content}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Input */}
-              <div className="p-4 border-t border-border">
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      placeholder="Hỏi bất kỳ điều gì..."
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-muted border-0 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground">
-                      <Sparkles className="w-3 h-3" />
-                      <span>AI</span>
-                    </div>
-                  </div>
-                  <Button className="btn-gradient-secondary border-0 px-4">
-                    <Send className="w-5 h-5" />
-                  </Button>
-                </div>
+            <div className="glass-card rounded-3xl overflow-hidden h-[520px] flex flex-col">
+              <div className="flex-1 min-h-0">
+                <ChatBot />
               </div>
             </div>
           </motion.div>
@@ -158,7 +81,14 @@ export const ChatbotSection = () => {
               ))}
             </div>
 
-            <Button className="btn-gradient-secondary border-0">
+            <Button
+              className="btn-gradient-secondary border-0"
+              onClick={() =>
+                document
+                  .querySelector('[data-chatbot-section]')
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+            >
               <Bot className="w-4 h-4 mr-2" />
               Thử ngay StudyBot
             </Button>
