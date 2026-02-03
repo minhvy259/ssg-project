@@ -7,8 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { name: "Tính năng", href: "#features" },
-  { name: "Study Room", href: "#study-room" },
-  { name: "Diễn đàn", href: "#forum" },
+  { name: "Study Room", href: "/study-room", isRoute: true },
+  { name: "Diễn đàn", href: "/forum", isRoute: true },
   { name: "Cộng đồng", href: "#community" },
 ];
 
@@ -50,15 +50,25 @@ export const Navbar = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
-                >
-                  {link.name}
-                </a>
-              ))}
+              {navLinks.map((link) => 
+                link.isRoute ? (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
+                  >
+                    {link.name}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
+                  >
+                    {link.name}
+                  </a>
+                )
+              )}
             </div>
 
             {/* Right Actions */}
@@ -125,16 +135,27 @@ export const Navbar = () => {
                 className="md:hidden mt-4 pt-4 border-t border-border"
               >
                 <div className="flex flex-col gap-3">
-                  {navLinks.map((link) => (
-                    <a
-                      key={link.name}
-                      href={link.href}
-                      className="text-sm font-medium text-muted-foreground hover:text-foreground py-2 transition-colors"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {link.name}
-                    </a>
-                  ))}
+                  {navLinks.map((link) => 
+                    link.isRoute ? (
+                      <Link
+                        key={link.name}
+                        to={link.href}
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground py-2 transition-colors"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {link.name}
+                      </Link>
+                    ) : (
+                      <a
+                        key={link.name}
+                        href={link.href}
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground py-2 transition-colors"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {link.name}
+                      </a>
+                    )
+                  )}
                   <div className="flex items-center gap-2 pt-4 border-t border-border">
                     <Button
                       variant="ghost"
