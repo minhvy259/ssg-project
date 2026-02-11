@@ -336,33 +336,126 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      messages: {
         Row: {
-          avatar_url: string | null
+          content: string
           created_at: string
-          email: string | null
-          full_name: string | null
           id: string
-          updated_at: string
+          is_read: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean | null
+          link: string | null
+          message: string | null
+          title: string
+          type: string
           user_id: string
         }
         Insert: {
-          avatar_url?: string | null
+          actor_id?: string | null
           created_at?: string
-          email?: string | null
-          full_name?: string | null
           id?: string
-          updated_at?: string
+          is_read?: boolean | null
+          link?: string | null
+          message?: string | null
+          title: string
+          type: string
           user_id: string
         }
         Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          comment_count: number | null
+          created_at: string
+          email: string | null
+          favorite_subjects: string[] | null
+          full_name: string | null
+          id: string
+          major: string | null
+          post_count: number | null
+          privacy_setting: string | null
+          reputation_points: number | null
+          school: string | null
+          updated_at: string
+          upvotes_received: number | null
+          user_id: string
+          year_of_study: string | null
+        }
+        Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          comment_count?: number | null
           created_at?: string
           email?: string | null
+          favorite_subjects?: string[] | null
           full_name?: string | null
           id?: string
+          major?: string | null
+          post_count?: number | null
+          privacy_setting?: string | null
+          reputation_points?: number | null
+          school?: string | null
           updated_at?: string
+          upvotes_received?: number | null
+          user_id: string
+          year_of_study?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          comment_count?: number | null
+          created_at?: string
+          email?: string | null
+          favorite_subjects?: string[] | null
+          full_name?: string | null
+          id?: string
+          major?: string | null
+          post_count?: number | null
+          privacy_setting?: string | null
+          reputation_points?: number | null
+          school?: string | null
+          updated_at?: string
+          upvotes_received?: number | null
           user_id?: string
+          year_of_study?: string | null
         }
         Relationships: []
       }
@@ -475,6 +568,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          badge_description: string | null
+          badge_icon: string
+          badge_name: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_description?: string | null
+          badge_icon?: string
+          badge_name: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_description?: string | null
+          badge_icon?: string
+          badge_name?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       public_profiles: {
@@ -540,6 +681,7 @@ export type Database = {
           owner_name: string
         }[]
       }
+      get_conversations: { Args: { p_limit?: number }; Returns: Json }
       get_forum_post_detail: { Args: { p_post_id: string }; Returns: Json }
       get_forum_posts: {
         Args: {
@@ -573,6 +715,19 @@ export type Database = {
           user_vote: number
           view_count: number
         }[]
+      }
+      get_forum_stats: { Args: never; Returns: Json }
+      get_leaderboard: {
+        Args: { p_limit?: number; p_type?: string }
+        Returns: Json
+      }
+      get_messages_with_user: {
+        Args: { p_limit?: number; p_other_user_id: string }
+        Returns: Json
+      }
+      get_notifications: {
+        Args: { p_limit?: number; p_unread_only?: boolean }
+        Returns: Json
       }
       get_post_comments: {
         Args: { p_post_id: string; p_sort?: string }
@@ -632,11 +787,34 @@ export type Database = {
           view_count: number
         }[]
       }
+      get_user_profile: { Args: { p_user_id: string }; Returns: Json }
+      get_user_rank: { Args: { p_reputation: number }; Returns: string }
       join_study_room: { Args: { p_room_id: string }; Returns: Json }
       leave_study_room: { Args: { p_room_id: string }; Returns: Json }
+      mark_notifications_read: {
+        Args: { p_notification_ids?: string[] }
+        Returns: Json
+      }
+      send_message: {
+        Args: { p_content: string; p_receiver_id: string }
+        Returns: Json
+      }
+      toggle_follow: { Args: { p_target_user_id: string }; Returns: Json }
       toggle_save_post: { Args: { p_post_id: string }; Returns: Json }
       update_focus_status: {
         Args: { p_room_id: string; p_status: string }
+        Returns: Json
+      }
+      update_user_profile: {
+        Args: {
+          p_bio?: string
+          p_favorite_subjects?: string[]
+          p_full_name?: string
+          p_major?: string
+          p_privacy_setting?: string
+          p_school?: string
+          p_year_of_study?: string
+        }
         Returns: Json
       }
       vote_on_comment: {

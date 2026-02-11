@@ -10,12 +10,15 @@ import {
   BookOpen,
   TrendingUp,
   Hash,
+  Trophy,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useForumCategories, useTrendingTags } from '@/hooks/useForum';
+import { useForumStats, useLeaderboard } from '@/hooks/useProfile';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   MessageCircle,
@@ -35,6 +38,8 @@ export function ForumSidebar() {
 
   const { data: categories, isLoading: loadingCategories } = useForumCategories();
   const { data: tags, isLoading: loadingTags } = useTrendingTags(10);
+  const { data: stats } = useForumStats();
+  const { data: leaderboard } = useLeaderboard('reputation', 5);
 
   return (
     <aside className="space-y-6">
@@ -140,16 +145,53 @@ export function ForumSidebar() {
         <CardContent className="pt-0 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Tổng bài viết</span>
-            <span className="font-medium">--</span>
+            <span className="font-medium">{stats?.total_posts ?? '--'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Bình luận</span>
+            <span className="font-medium">{stats?.total_comments ?? '--'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Thành viên</span>
-            <span className="font-medium">--</span>
+            <span className="font-medium">{stats?.total_users ?? '--'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Online hôm nay</span>
-            <span className="font-medium text-primary">--</span>
+            <span className="text-muted-foreground">Bài viết hôm nay</span>
+            <span className="font-medium text-primary">{stats?.posts_today ?? '--'}</span>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Leaderboard */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Bảng xếp hạng
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-2">
+          {leaderboard && leaderboard.length > 0 ? (
+            leaderboard.map((user: any, i: number) => (
+              <Link
+                key={user.user_id}
+                to={`/profile/${user.user_id}`}
+                className="flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors"
+              >
+                <span className="text-sm font-bold text-muted-foreground w-5">{i + 1}</span>
+                <Avatar className="w-7 h-7">
+                  <AvatarImage src={user.avatar_url || undefined} />
+                  <AvatarFallback className="text-xs">{user.full_name?.[0] || '?'}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-foreground truncate block">{user.full_name || 'Ẩn danh'}</span>
+                </div>
+                <Badge variant="secondary" className="text-xs">{user.reputation_points} ⭐</Badge>
+              </Link>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">Chưa có dữ liệu</p>
+          )}
         </CardContent>
       </Card>
     </aside>

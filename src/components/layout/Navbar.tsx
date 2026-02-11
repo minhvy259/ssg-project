@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, Moon, Sun, BookOpen, LogOut } from "lucide-react";
+import { Menu, X, Globe, Moon, Sun, BookOpen, LogOut, MessageCircle, User } from "lucide-react";
+import { NotificationBell } from './NotificationBell';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +10,7 @@ const navLinks = [
   { name: "Tính năng", href: "#features" },
   { name: "Study Room", href: "/study-room", isRoute: true },
   { name: "Diễn đàn", href: "/forum", isRoute: true },
-  { name: "Cộng đồng", href: "#community" },
+  { name: "Tin nhắn", href: "/messages", isRoute: true },
 ];
 
 export const Navbar = () => {
@@ -92,7 +93,11 @@ export const Navbar = () => {
 
               {user ? (
                 <>
-                  <span className="hidden md:flex text-sm text-muted-foreground">
+                  <NotificationBell />
+                  <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
+                    <Link to="/profile"><User className="w-5 h-5" /></Link>
+                  </Button>
+                  <span className="hidden lg:flex text-sm text-muted-foreground">
                     {user.email}
                   </span>
                   <Button variant="ghost" className="hidden md:flex" onClick={handleSignOut}>
