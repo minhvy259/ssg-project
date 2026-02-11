@@ -29,7 +29,8 @@ export const MessageContent = ({ content, isUser }: MessageContentProps) => {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          code({ node, inline, className, children, ...props }) {
+          code({ node, className, children, ...props }: any) {
+            const inline = !(props as any).hasOwnProperty('data-sourcepos') && !String(children).includes('\n');
             const match = /language-(\w+)/.exec(className || '');
             const codeString = String(children).replace(/\n$/, '');
             const codeId = `${match?.[1] || 'code'}-${codeString.slice(0, 20)}`;
@@ -59,11 +60,10 @@ export const MessageContent = ({ content, isUser }: MessageContentProps) => {
                     </Button>
                   </div>
                   <SyntaxHighlighter
-                    style={vscDarkPlus}
+                    style={vscDarkPlus as any}
                     language={match[1]}
                     PreTag="div"
                     className="!mt-0 !rounded-t-none"
-                    {...props}
                   >
                     {codeString}
                   </SyntaxHighlighter>
