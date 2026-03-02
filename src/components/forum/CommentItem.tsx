@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { Link } from 'react-router-dom';
 import { 
   ArrowBigUp, 
   ArrowBigDown, 
@@ -156,15 +157,17 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
         <div className="flex-1 min-w-0">
           {/* Author info */}
           <div className="flex items-center gap-2 mb-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={comment.author_avatar || undefined} />
-              <AvatarFallback className="text-xs">
-                {comment.author_name?.charAt(0) || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <span className="font-medium text-sm">
+            <Link to={`/profile/${comment.author_id}`}>
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={comment.author_avatar || undefined} />
+                <AvatarFallback className="text-xs">
+                  {comment.author_name?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+            <Link to={`/profile/${comment.author_id}`} className="font-medium text-sm hover:underline">
               {comment.author_name || 'Ẩn danh'}
-            </span>
+            </Link>
             {comment.author_id === postAuthorId && (
               <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                 OP

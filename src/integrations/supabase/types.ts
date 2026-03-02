@@ -667,6 +667,17 @@ export type Database = {
         Returns: Json
       }
       delete_comment: { Args: { p_comment_id: string }; Returns: Json }
+      delete_forum_post: { Args: { p_post_id: string }; Returns: Json }
+      edit_forum_post: {
+        Args: {
+          p_category_id?: string
+          p_content?: string
+          p_post_id: string
+          p_tags?: string[]
+          p_title?: string
+        }
+        Returns: Json
+      }
       get_active_rooms: {
         Args: never
         Returns: {
