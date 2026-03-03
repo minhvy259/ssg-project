@@ -283,6 +283,54 @@ export type Database = {
           },
         ]
       }
+      forum_reports: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          post_id: string | null
+          reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          post_id?: string | null
+          reason: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          post_id?: string | null
+          reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "forum_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_saved_posts: {
         Row: {
           created_at: string
@@ -668,6 +716,10 @@ export type Database = {
       }
       delete_comment: { Args: { p_comment_id: string }; Returns: Json }
       delete_forum_post: { Args: { p_post_id: string }; Returns: Json }
+      edit_comment: {
+        Args: { p_comment_id: string; p_content: string }
+        Returns: Json
+      }
       edit_forum_post: {
         Args: {
           p_category_id?: string
@@ -804,6 +856,15 @@ export type Database = {
       leave_study_room: { Args: { p_room_id: string }; Returns: Json }
       mark_notifications_read: {
         Args: { p_notification_ids?: string[] }
+        Returns: Json
+      }
+      report_content: {
+        Args: {
+          p_comment_id?: string
+          p_description?: string
+          p_post_id?: string
+          p_reason?: string
+        }
         Returns: Json
       }
       send_message: {

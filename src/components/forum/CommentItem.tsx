@@ -8,6 +8,8 @@ import {
   Reply, 
   Check, 
   Trash2, 
+  Edit,
+  Flag,
   MoreHorizontal,
   CheckCircle2
 } from 'lucide-react';
@@ -32,8 +34,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Comment, useVoteComment, useCreateComment, useAcceptComment, useDeleteComment } from '@/hooks/usePostDetail';
+import { useEditComment } from '@/hooks/usePostActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { ReportDialog } from './ReportDialog';
 
 interface CommentItemProps {
   comment: Comment;
@@ -46,33 +50,30 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
   const { user } = useAuth();
   const { toast } = useToast();
   const [isReplying, setIsReplying] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [replyContent, setReplyContent] = useState('');
+  const [editContent, setEditContent] = useState(comment.content);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
   
   const voteComment = useVoteComment();
   const createComment = useCreateComment();
   const acceptComment = useAcceptComment();
   const deleteComment = useDeleteComment();
+  const editComment = useEditComment();
   
   const score = comment.upvotes - comment.downvotes;
-  const timeAgo = formatDistanceToNow(new Date(comment.created_at), {
-    addSuffix: true,
-    locale: vi,
-  });
+  const timeAgo = formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: vi });
+  const isEdited = comment.updated_at !== comment.created_at;
   
   const isPostAuthor = user?.id === postAuthorId;
-  const canAccept = isPostAuthor && comment.depth === 0; // Only top-level comments can be accepted
+  const canAccept = isPostAuthor && comment.depth === 0;
   
-  // Get replies for this comment
   const replies = allComments.filter(c => c.parent_id === comment.id);
 
   const handleVote = (voteType: 1 | -1) => {
     if (!user) {
-      toast({
-        title: 'Vui lòng đăng nhập',
-        description: 'Bạn cần đăng nhập để vote.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Vui lòng đăng nhập', description: 'Bạn cần đăng nhập để vote.', variant: 'destructive' });
       return;
     }
     voteComment.mutate({ commentId: comment.id, voteType, postId });
@@ -80,24 +81,19 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
 
   const handleReply = async () => {
     if (!user) {
-      toast({
-        title: 'Vui lòng đăng nhập',
-        description: 'Bạn cần đăng nhập để trả lời.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Vui lòng đăng nhập', description: 'Bạn cần đăng nhập để trả lời.', variant: 'destructive' });
       return;
     }
-    
     if (!replyContent.trim()) return;
-    
-    await createComment.mutateAsync({
-      postId,
-      content: replyContent,
-      parentId: comment.id,
-    });
-    
+    await createComment.mutateAsync({ postId, content: replyContent, parentId: comment.id });
     setReplyContent('');
     setIsReplying(false);
+  };
+
+  const handleEdit = async () => {
+    if (!editContent.trim()) return;
+    await editComment.mutateAsync({ commentId: comment.id, content: editContent, postId });
+    setIsEditing(false);
   };
 
   const handleAccept = () => {
@@ -110,11 +106,7 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
   };
 
   return (
-    <div className={cn(
-      "relative",
-      comment.depth > 0 && "ml-6 pl-4 border-l-2 border-muted"
-    )}>
-      {/* Accepted badge */}
+    <div className={cn("relative", comment.depth > 0 && "ml-6 pl-4 border-l-2 border-muted")}>
       {comment.is_accepted && (
         <div className="flex items-center gap-1 mb-2 text-sm text-primary font-medium">
           <CheckCircle2 className="h-4 w-4" />
@@ -122,88 +114,71 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
         </div>
       )}
       
-      <div className={cn(
-        "flex gap-3 p-4 rounded-lg",
-        comment.is_accepted && "bg-primary/5 border border-primary/20"
-      )}>
+      <div className={cn("flex gap-3 p-4 rounded-lg", comment.is_accepted && "bg-primary/5 border border-primary/20")}>
         {/* Vote buttons */}
         <div className="flex flex-col items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn('h-7 w-7', comment.user_vote === 1 && 'text-primary')}
-            onClick={() => handleVote(1)}
-          >
+          <Button variant="ghost" size="icon" className={cn('h-7 w-7', comment.user_vote === 1 && 'text-primary')} onClick={() => handleVote(1)}>
             <ArrowBigUp className="h-5 w-5" />
           </Button>
-          <span className={cn(
-            'text-sm font-semibold',
-            score > 0 && 'text-primary',
-            score < 0 && 'text-destructive'
-          )}>
-            {score}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn('h-7 w-7', comment.user_vote === -1 && 'text-destructive')}
-            onClick={() => handleVote(-1)}
-          >
+          <span className={cn('text-sm font-semibold', score > 0 && 'text-primary', score < 0 && 'text-destructive')}>{score}</span>
+          <Button variant="ghost" size="icon" className={cn('h-7 w-7', comment.user_vote === -1 && 'text-destructive')} onClick={() => handleVote(-1)}>
             <ArrowBigDown className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Author info */}
           <div className="flex items-center gap-2 mb-2">
             <Link to={`/profile/${comment.author_id}`}>
               <Avatar className="h-6 w-6">
                 <AvatarImage src={comment.author_avatar || undefined} />
-                <AvatarFallback className="text-xs">
-                  {comment.author_name?.charAt(0) || 'U'}
-                </AvatarFallback>
+                <AvatarFallback className="text-xs">{comment.author_name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
             </Link>
             <Link to={`/profile/${comment.author_id}`} className="font-medium text-sm hover:underline">
               {comment.author_name || 'Ẩn danh'}
             </Link>
             {comment.author_id === postAuthorId && (
-              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                OP
-              </span>
+              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">OP</span>
             )}
             <span className="text-xs text-muted-foreground">•</span>
             <span className="text-xs text-muted-foreground">{timeAgo}</span>
+            {isEdited && <span className="text-xs text-muted-foreground italic">(đã sửa)</span>}
           </div>
 
-          {/* Comment content */}
-          <div className="text-sm text-foreground whitespace-pre-wrap mb-3">
-            {comment.content}
-          </div>
+          {/* Comment content or edit mode */}
+          {isEditing ? (
+            <div className="space-y-2 mb-3">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="min-h-[80px] resize-none"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleEdit} disabled={!editContent.trim() || editComment.isPending}>
+                  {editComment.isPending ? 'Đang lưu...' : 'Lưu'}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => { setIsEditing(false); setEditContent(comment.content); }}>
+                  Hủy
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-foreground whitespace-pre-wrap mb-3">{comment.content}</div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-2">
             {comment.depth < 4 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
-                onClick={() => setIsReplying(!isReplying)}
-              >
-                <Reply className="h-3.5 w-3.5 mr-1" />
-                Trả lời
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setIsReplying(!isReplying)}>
+                <Reply className="h-3.5 w-3.5 mr-1" /> Trả lời
               </Button>
             )}
             
             {canAccept && (
               <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "h-7 text-xs",
-                  comment.is_accepted ? "text-primary" : "text-muted-foreground"
-                )}
+                variant="ghost" size="sm"
+                className={cn("h-7 text-xs", comment.is_accepted ? "text-primary" : "text-muted-foreground")}
                 onClick={handleAccept}
               >
                 <Check className="h-3.5 w-3.5 mr-1" />
@@ -211,24 +186,30 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
               </Button>
             )}
 
-            {comment.is_author && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Xóa bình luận
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {comment.is_author && (
+                  <>
+                    <DropdownMenuItem onClick={() => { setIsEditing(true); setEditContent(comment.content); }}>
+                      <Edit className="h-4 w-4 mr-2" /> Chỉnh sửa
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => setShowDeleteDialog(true)}>
+                      <Trash2 className="h-4 w-4 mr-2" /> Xóa bình luận
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {user && !comment.is_author && (
+                  <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                    <Flag className="h-4 w-4 mr-2" /> Báo cáo
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Reply input */}
@@ -241,21 +222,10 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
                 className="min-h-[80px] resize-none"
               />
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleReply}
-                  disabled={!replyContent.trim() || createComment.isPending}
-                >
+                <Button size="sm" onClick={handleReply} disabled={!replyContent.trim() || createComment.isPending}>
                   {createComment.isPending ? 'Đang gửi...' : 'Gửi'}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setIsReplying(false);
-                    setReplyContent('');
-                  }}
-                >
+                <Button variant="ghost" size="sm" onClick={() => { setIsReplying(false); setReplyContent(''); }}>
                   Hủy
                 </Button>
               </div>
@@ -268,13 +238,7 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
       {replies.length > 0 && (
         <div className="mt-2 space-y-2">
           {replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              postId={postId}
-              postAuthorId={postAuthorId}
-              allComments={allComments}
-            />
+            <CommentItem key={reply.id} comment={reply} postId={postId} postAuthorId={postAuthorId} allComments={allComments} />
           ))}
         </div>
       )}
@@ -284,18 +248,17 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa bình luận?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bình luận và tất cả câu trả lời sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Bình luận và tất cả câu trả lời sẽ bị xóa vĩnh viễn.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Xóa
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Xóa</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Report dialog */}
+      <ReportDialog open={showReportDialog} onOpenChange={setShowReportDialog} commentId={comment.id} />
     </div>
   );
 }

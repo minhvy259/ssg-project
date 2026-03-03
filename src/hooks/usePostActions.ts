@@ -75,3 +75,36 @@ export function useEditPost() {
     },
   });
 }
+
+export function useEditComment() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (params: { commentId: string; content: string; postId: string }) => {
+      const { data, error } = await supabase.rpc('edit_comment', {
+        p_comment_id: params.commentId,
+        p_content: params.content,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error || 'Failed to edit');
+      return result;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['post-comments', variables.postId] });
+      toast({ title: 'Đã cập nhật bình luận!' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Lỗi',
+        description: error.message === 'CONTENT_TOO_SHORT'
+          ? 'Nội dung quá ngắn'
+          : error.message === 'NOT_AUTHOR'
+          ? 'Bạn chỉ có thể sửa bình luận của mình'
+          : 'Không thể cập nhật. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
+    },
+  });
+}
