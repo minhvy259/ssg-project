@@ -47,12 +47,14 @@ import {
 import { CommentSection } from '@/components/forum/CommentSection';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { EditPostDialog } from '@/components/forum/EditPostDialog';
+import { ReportDialog } from '@/components/forum/ReportDialog';
 import { usePostDetail } from '@/hooks/usePostDetail';
 import { useVotePost, useToggleSavePost } from '@/hooks/useForum';
 import { useDeletePost } from '@/hooks/usePostActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 const languageFlags: Record<string, string> = {
   en: '🇺🇸', vi: '🇻🇳', es: '🇪🇸', ja: '🇯🇵', ko: '🇰🇷', zh: '🇨🇳', fr: '🇫🇷', de: '🇩🇪', other: '🌐',
@@ -63,8 +65,10 @@ export default function PostDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   const { data: post, isLoading, error } = usePostDetail(postId);
   const votePost = useVotePost();
@@ -76,7 +80,13 @@ export default function PostDetail() {
       toast({ title: 'Vui lòng đăng nhập', description: 'Bạn cần đăng nhập để vote.', variant: 'destructive' });
       return;
     }
-    if (postId) votePost.mutate({ postId, voteType });
+    if (postId) {
+      votePost.mutate({ postId, voteType }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['post-detail', postId] });
+        },
+      });
+    }
   };
 
   const handleSave = () => {
@@ -84,7 +94,13 @@ export default function PostDetail() {
       toast({ title: 'Vui lòng đăng nhập', description: 'Bạn cần đăng nhập để lưu bài viết.', variant: 'destructive' });
       return;
     }
-    if (postId) toggleSave.mutate(postId);
+    if (postId) {
+      toggleSave.mutate(postId, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['post-detail', postId] });
+        },
+      });
+    }
   };
 
   const handleShare = async () => {
@@ -145,7 +161,6 @@ export default function PostDetail() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-
       <main className="flex-1 container mx-auto px-4 py-8 pt-24">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 min-w-0">
@@ -223,6 +238,11 @@ export default function PostDetail() {
                           <DropdownMenuItem onClick={handleShare}>
                             <Share2 className="h-4 w-4 mr-2" /> Sao chép link
                           </DropdownMenuItem>
+                          {user && !post.is_author && (
+                            <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                              <Flag className="h-4 w-4 mr-2" /> Báo cáo
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -297,12 +317,11 @@ export default function PostDetail() {
 
       {/* Edit Dialog */}
       {post.is_author && (
-        <EditPostDialog
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
-          post={post}
-        />
+        <EditPostDialog open={showEditDialog} onOpenChange={setShowEditDialog} post={post} />
       )}
+
+      {/* Report Dialog */}
+      <ReportDialog open={showReportDialog} onOpenChange={setShowReportDialog} postId={post.id} />
     </div>
   );
 }
