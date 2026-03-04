@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X } from 'lucide-react';
+import { X, Eye, Edit } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Form,
   FormControl,
@@ -55,6 +58,7 @@ interface EditPostDialogProps {
 export function EditPostDialog({ open, onOpenChange, post }: EditPostDialogProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [previewTab, setPreviewTab] = useState('write');
   const { data: categories } = useForumCategories();
   const editPost = useEditPost();
 
@@ -67,6 +71,8 @@ export function EditPostDialog({ open, onOpenChange, post }: EditPostDialogProps
     },
   });
 
+  const contentValue = form.watch('content');
+
   useEffect(() => {
     if (open) {
       form.reset({
@@ -75,6 +81,7 @@ export function EditPostDialog({ open, onOpenChange, post }: EditPostDialogProps
         categoryId: post.category_id || '',
       });
       setTags(post.tags.map(t => t.name));
+      setPreviewTab('write');
     }
   }, [open, post]);
 
@@ -99,10 +106,10 @@ export function EditPostDialog({ open, onOpenChange, post }: EditPostDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa bài viết</DialogTitle>
-          <DialogDescription>Cập nhật nội dung bài viết của bạn.</DialogDescription>
+          <DialogDescription>Cập nhật nội dung bài viết của bạn. Hỗ trợ Markdown.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -144,19 +151,45 @@ export function EditPostDialog({ open, onOpenChange, post }: EditPostDialogProps
               )}
             />
 
+            {/* Content with Markdown preview */}
             <FormField
               control={form.control}
               name="content"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nội dung *</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Viết nội dung..."
-                      className="min-h-[200px] resize-none"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Tabs value={previewTab} onValueChange={setPreviewTab}>
+                    <TabsList className="mb-2">
+                      <TabsTrigger value="write" className="gap-1.5">
+                        <Edit className="h-3.5 w-3.5" /> Viết
+                      </TabsTrigger>
+                      <TabsTrigger value="preview" className="gap-1.5">
+                        <Eye className="h-3.5 w-3.5" /> Xem trước
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="write" className="mt-0">
+                      <FormControl>
+                        <Textarea
+                          placeholder="Viết nội dung..."
+                          className="min-h-[200px] resize-none font-mono text-sm"
+                          {...field}
+                        />
+                      </FormControl>
+                    </TabsContent>
+                    <TabsContent value="preview" className="mt-0">
+                      <div className="min-h-[200px] rounded-md border border-input bg-background px-3 py-2 overflow-y-auto">
+                        {contentValue ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {contentValue}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">Chưa có nội dung...</p>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                   <FormMessage />
                 </FormItem>
               )}

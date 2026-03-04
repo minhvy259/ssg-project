@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageCircle, SortAsc } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +15,8 @@ import { Comment, CommentSortType, usePostComments, useCreateComment } from '@/h
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CommentSectionProps {
   postId: string;
@@ -26,13 +28,37 @@ interface CommentSectionProps {
 export function CommentSection({ postId, postAuthorId, commentCount, isLocked }: CommentSectionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [sortType, setSortType] = useState<CommentSortType>('best');
   const [newComment, setNewComment] = useState('');
   
   const { data: comments, isLoading } = usePostComments(postId, sortType);
   const createComment = useCreateComment();
   
-  // Get only top-level comments for rendering (replies are handled by CommentItem)
+  // Realtime subscription for comments
+  useEffect(() => {
+    const channel = supabase
+      .channel(`comments-${postId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'forum_comments',
+          filter: `post_id=eq.${postId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['post-comments', postId] });
+          queryClient.invalidateQueries({ queryKey: ['post-detail', postId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [postId, queryClient]);
+  
   const topLevelComments = comments?.filter(c => c.parent_id === null) || [];
 
   const handleSubmitComment = async () => {
@@ -85,12 +111,15 @@ export function CommentSection({ postId, postAuthorId, commentCount, isLocked }:
       ) : user ? (
         <div className="space-y-3">
           <Textarea
-            placeholder="Viết bình luận của bạn..."
+            placeholder="Viết bình luận của bạn... (hỗ trợ Markdown)"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             className="min-h-[100px] resize-none"
           />
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Hỗ trợ **bold**, *italic*, `code`, [link](url)
+            </span>
             <Button
               onClick={handleSubmitComment}
               disabled={!newComment.trim() || createComment.isPending}

@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ArrowBigUp, ArrowBigDown, MessageCircle, Bookmark, Eye, Pin } from 'lucide-react';
+import { ArrowBigUp, ArrowBigDown, MessageCircle, Bookmark, BookmarkCheck, Eye, Pin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface PostCardProps {
-  post: ForumPost;
+  post: ForumPost & { saved_at?: string };
   viewMode?: 'card' | 'list';
 }
 
@@ -28,26 +28,31 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
 
   const score = post.upvotes - post.downvotes;
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: vi });
+  const isSaved = !!(post as any).saved_at;
 
-  const handleVote = (voteType: 1 | -1) => {
+  const handleVote = (e: React.MouseEvent, voteType: 1 | -1) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!user) { toast({ title: 'Vui lòng đăng nhập', description: 'Bạn cần đăng nhập để vote bài viết.', variant: 'destructive' }); return; }
     votePost.mutate({ postId: post.id, voteType });
   };
 
-  const handleSave = () => {
+  const handleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!user) { toast({ title: 'Vui lòng đăng nhập', description: 'Bạn cần đăng nhập để lưu bài viết.', variant: 'destructive' }); return; }
     toggleSave.mutate(post.id);
   };
 
   if (viewMode === 'list') {
     return (
-      <div className="flex items-start gap-4 p-4 border-b border-border hover:bg-muted/30 transition-colors">
+      <div className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors">
         <div className="flex flex-col items-center gap-1 min-w-[40px]">
-          <Button variant="ghost" size="icon" className={cn('h-8 w-8', post.user_vote === 1 && 'text-primary')} onClick={() => handleVote(1)}>
+          <Button variant="ghost" size="icon" className={cn('h-8 w-8', post.user_vote === 1 && 'text-primary')} onClick={(e) => handleVote(e, 1)}>
             <ArrowBigUp className="h-5 w-5" />
           </Button>
           <span className={cn('text-sm font-semibold', score > 0 && 'text-primary', score < 0 && 'text-destructive')}>{score}</span>
-          <Button variant="ghost" size="icon" className={cn('h-8 w-8', post.user_vote === -1 && 'text-destructive')} onClick={() => handleVote(-1)}>
+          <Button variant="ghost" size="icon" className={cn('h-8 w-8', post.user_vote === -1 && 'text-destructive')} onClick={(e) => handleVote(e, -1)}>
             <ArrowBigDown className="h-5 w-5" />
           </Button>
         </div>
@@ -56,7 +61,7 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             {post.is_pinned && <Badge variant="secondary" className="text-xs"><Pin className="h-3 w-3 mr-1" /> Ghim</Badge>}
             {post.category_name && (
-              <Link to={`/forum?category=${post.category_slug}`}>
+              <Link to={`/forum?category=${post.category_slug}`} onClick={(e) => e.stopPropagation()}>
                 <Badge variant="outline" style={{ borderColor: post.category_color || undefined, color: post.category_color || undefined }}>
                   {post.category_name}
                 </Badge>
@@ -72,7 +77,7 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
           <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{post.excerpt}</p>
 
           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-            <Link to={`/profile/${post.author_id}`} className="flex items-center gap-2 hover:text-foreground transition-colors">
+            <Link to={`/profile/${post.author_id}`} className="flex items-center gap-2 hover:text-foreground transition-colors" onClick={(e) => e.stopPropagation()}>
               <Avatar className="h-5 w-5">
                 <AvatarImage src={post.author_avatar || undefined} />
                 <AvatarFallback className="text-xs">{post.author_name?.charAt(0) || 'U'}</AvatarFallback>
@@ -87,7 +92,9 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
           </div>
         </div>
 
-        <Button variant="ghost" size="icon" onClick={handleSave}><Bookmark className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" onClick={handleSave} className={cn(isSaved && 'text-primary')}>
+          {isSaved ? <BookmarkCheck className="h-5 w-5" /> : <Bookmark className="h-5 w-5" />}
+        </Button>
       </div>
     );
   }
@@ -97,11 +104,11 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
       <CardContent className="p-0">
         <div className="flex">
           <div className="flex flex-col items-center gap-1 p-3 bg-muted/30">
-            <Button variant="ghost" size="icon" className={cn('h-8 w-8', post.user_vote === 1 && 'text-primary bg-primary/10')} onClick={() => handleVote(1)}>
+            <Button variant="ghost" size="icon" className={cn('h-8 w-8', post.user_vote === 1 && 'text-primary bg-primary/10')} onClick={(e) => handleVote(e, 1)}>
               <ArrowBigUp className="h-6 w-6" />
             </Button>
             <span className={cn('text-sm font-bold', score > 0 && 'text-primary', score < 0 && 'text-destructive')}>{score}</span>
-            <Button variant="ghost" size="icon" className={cn('h-8 w-8', post.user_vote === -1 && 'text-destructive bg-destructive/10')} onClick={() => handleVote(-1)}>
+            <Button variant="ghost" size="icon" className={cn('h-8 w-8', post.user_vote === -1 && 'text-destructive bg-destructive/10')} onClick={(e) => handleVote(e, -1)}>
               <ArrowBigDown className="h-6 w-6" />
             </Button>
           </div>
@@ -110,14 +117,14 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               {post.is_pinned && <Badge variant="secondary" className="text-xs"><Pin className="h-3 w-3 mr-1" /> Ghim</Badge>}
               {post.category_name && (
-                <Link to={`/forum?category=${post.category_slug}`}>
+                <Link to={`/forum?category=${post.category_slug}`} onClick={(e) => e.stopPropagation()}>
                   <Badge variant="outline" className="text-xs" style={{ borderColor: post.category_color || undefined, color: post.category_color || undefined }}>
                     {post.category_name}
                   </Badge>
                 </Link>
               )}
               <span className="text-base">{languageFlags[post.language] || languageFlags.other}</span>
-              <Link to={`/profile/${post.author_id}`} className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto hover:text-foreground transition-colors">
+              <Link to={`/profile/${post.author_id}`} className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto hover:text-foreground transition-colors" onClick={(e) => e.stopPropagation()}>
                 <Avatar className="h-5 w-5">
                   <AvatarImage src={post.author_avatar || undefined} />
                   <AvatarFallback className="text-xs">{post.author_name?.charAt(0) || 'U'}</AvatarFallback>
@@ -137,7 +144,7 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
             {post.tags && post.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {post.tags.map((tag) => (
-                  <Link key={tag.id} to={`/forum?tag=${tag.slug}`}>
+                  <Link key={tag.id} to={`/forum?tag=${tag.slug}`} onClick={(e) => e.stopPropagation()}>
                     <Badge variant="secondary" className="text-xs hover:bg-secondary/80">#{tag.name}</Badge>
                   </Link>
                 ))}
@@ -147,8 +154,9 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" /> {post.comment_count} bình luận</span>
               <span className="flex items-center gap-1"><Eye className="h-4 w-4" /> {post.view_count}</span>
-              <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground hover:text-foreground" onClick={handleSave}>
-                <Bookmark className="h-4 w-4 mr-1" /> Lưu
+              <Button variant="ghost" size="sm" className={cn("ml-auto text-muted-foreground hover:text-foreground", isSaved && "text-primary")} onClick={handleSave}>
+                {isSaved ? <BookmarkCheck className="h-4 w-4 mr-1" /> : <Bookmark className="h-4 w-4 mr-1" />}
+                {isSaved ? 'Đã lưu' : 'Lưu'}
               </Button>
             </div>
           </div>
