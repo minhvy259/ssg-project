@@ -32,6 +32,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import { Comment, useVoteComment, useCreateComment, useAcceptComment, useDeleteComment } from '@/hooks/usePostDetail';
 import { useEditComment } from '@/hooks/usePostActions';
@@ -164,7 +166,9 @@ export function CommentItem({ comment, postId, postAuthorId, allComments }: Comm
               </div>
             </div>
           ) : (
-            <div className="text-sm text-foreground whitespace-pre-wrap mb-3">{comment.content}</div>
+            <div className="text-sm text-foreground mb-3 prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.content}</ReactMarkdown>
+            </div>
           )}
 
           {/* Actions */}

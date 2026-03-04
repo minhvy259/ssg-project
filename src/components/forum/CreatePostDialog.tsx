@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Eye, Edit } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Form,
   FormControl,
@@ -63,6 +66,7 @@ export function CreatePostDialog({ trigger }: CreatePostDialogProps) {
   const [open, setOpen] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [previewTab, setPreviewTab] = useState('write');
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -78,6 +82,8 @@ export function CreatePostDialog({ trigger }: CreatePostDialogProps) {
       language: 'vi',
     },
   });
+
+  const contentValue = form.watch('content');
 
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim().toLowerCase();
@@ -110,6 +116,7 @@ export function CreatePostDialog({ trigger }: CreatePostDialogProps) {
         setOpen(false);
         form.reset();
         setTags([]);
+        setPreviewTab('write');
         navigate(`/forum/post/${result.post_id}`);
       }
     } catch (error) {
@@ -127,11 +134,11 @@ export function CreatePostDialog({ trigger }: CreatePostDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Tạo bài viết mới</DialogTitle>
           <DialogDescription>
-            Chia sẻ kiến thức, đặt câu hỏi hoặc thảo luận với cộng đồng sinh viên.
+            Chia sẻ kiến thức, đặt câu hỏi hoặc thảo luận. Hỗ trợ Markdown.
           </DialogDescription>
         </DialogHeader>
 
@@ -145,10 +152,7 @@ export function CreatePostDialog({ trigger }: CreatePostDialogProps) {
                 <FormItem>
                   <FormLabel>Tiêu đề *</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Nhập tiêu đề bài viết..."
-                      {...field}
-                    />
+                    <Input placeholder="Nhập tiêu đề bài viết..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -208,20 +212,45 @@ export function CreatePostDialog({ trigger }: CreatePostDialogProps) {
               />
             </div>
 
-            {/* Content */}
+            {/* Content with Markdown preview */}
             <FormField
               control={form.control}
               name="content"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nội dung *</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Viết nội dung bài viết của bạn..."
-                      className="min-h-[200px] resize-none"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Tabs value={previewTab} onValueChange={setPreviewTab}>
+                    <TabsList className="mb-2">
+                      <TabsTrigger value="write" className="gap-1.5">
+                        <Edit className="h-3.5 w-3.5" /> Viết
+                      </TabsTrigger>
+                      <TabsTrigger value="preview" className="gap-1.5">
+                        <Eye className="h-3.5 w-3.5" /> Xem trước
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="write" className="mt-0">
+                      <FormControl>
+                        <Textarea
+                          placeholder="Viết nội dung bài viết... (hỗ trợ Markdown: **bold**, *italic*, # heading, ```code```, > quote)"
+                          className="min-h-[200px] resize-none font-mono text-sm"
+                          {...field}
+                        />
+                      </FormControl>
+                    </TabsContent>
+                    <TabsContent value="preview" className="mt-0">
+                      <div className="min-h-[200px] rounded-md border border-input bg-background px-3 py-2 overflow-y-auto">
+                        {contentValue ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {contentValue}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">Chưa có nội dung để xem trước...</p>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                   <FormMessage />
                 </FormItem>
               )}
@@ -272,11 +301,7 @@ export function CreatePostDialog({ trigger }: CreatePostDialogProps) {
 
             {/* Submit */}
             <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" disabled={createPost.isPending}>
