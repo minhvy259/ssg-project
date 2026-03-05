@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { ImageUploadButton } from './ImageUploadButton';
 
 interface CommentSectionProps {
   postId: string;
@@ -117,9 +118,14 @@ export function CommentSection({ postId, postAuthorId, commentCount, isLocked }:
             className="min-h-[100px] resize-none"
           />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              Hỗ trợ **bold**, *italic*, `code`, [link](url)
-            </span>
+            <div className="flex items-center gap-2">
+              <ImageUploadButton
+                onImageUploaded={(url) => setNewComment(prev => prev + `\n![image](${url})\n`)}
+              />
+              <span className="text-xs text-muted-foreground">
+                **bold**, *italic*, `code`, [link](url)
+              </span>
+            </div>
             <Button
               onClick={handleSubmitComment}
               disabled={!newComment.trim() || createComment.isPending}

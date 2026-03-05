@@ -664,6 +664,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       public_profiles: {
@@ -687,6 +705,10 @@ export type Database = {
     }
     Functions: {
       accept_comment: { Args: { p_comment_id: string }; Returns: Json }
+      admin_delete_comment: { Args: { p_comment_id: string }; Returns: Json }
+      admin_delete_post: { Args: { p_post_id: string }; Returns: Json }
+      admin_toggle_lock: { Args: { p_post_id: string }; Returns: Json }
+      admin_toggle_pin: { Args: { p_post_id: string }; Returns: Json }
       can_user_join_room: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: Json
@@ -744,6 +766,11 @@ export type Database = {
           owner_name: string
         }[]
       }
+      get_admin_reports: {
+        Args: { p_limit?: number; p_status?: string }
+        Returns: Json
+      }
+      get_admin_stats: { Args: never; Returns: Json }
       get_conversations: { Args: { p_limit?: number }; Returns: Json }
       get_forum_post_detail: { Args: { p_post_id: string }; Returns: Json }
       get_forum_posts: {
@@ -852,6 +879,13 @@ export type Database = {
       }
       get_user_profile: { Args: { p_user_id: string }; Returns: Json }
       get_user_rank: { Args: { p_reputation: number }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       join_study_room: { Args: { p_room_id: string }; Returns: Json }
       leave_study_room: { Args: { p_room_id: string }; Returns: Json }
       mark_notifications_read: {
@@ -865,6 +899,10 @@ export type Database = {
           p_post_id?: string
           p_reason?: string
         }
+        Returns: Json
+      }
+      resolve_report: {
+        Args: { p_action?: string; p_report_id: string }
         Returns: Json
       }
       send_message: {
@@ -899,6 +937,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       content_language:
         | "en"
         | "vi"
@@ -1037,6 +1076,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       content_language: [
         "en",
         "vi",
