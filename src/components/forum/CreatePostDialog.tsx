@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, X, Eye, Edit } from 'lucide-react';
+import { Plus, X, Eye, Edit, ImagePlus, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -36,6 +36,7 @@ import {
 import { useForumCategories, useCreatePost } from '@/hooks/useForum';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { ImageUploadButton } from './ImageUploadButton';
 
 const createPostSchema = z.object({
   title: z.string().min(5, 'Tiêu đề phải có ít nhất 5 ký tự').max(200, 'Tiêu đề tối đa 200 ký tự'),
@@ -236,6 +237,15 @@ export function CreatePostDialog({ trigger }: CreatePostDialogProps) {
                           {...field}
                         />
                       </FormControl>
+                      <div className="flex items-center gap-2 mt-1">
+                        <ImageUploadButton
+                          onImageUploaded={(url) => {
+                            const current = form.getValues('content');
+                            form.setValue('content', current + `\n![image](${url})\n`);
+                          }}
+                        />
+                        <span className="text-xs text-muted-foreground">Tối đa 5MB (JPG, PNG, GIF, WebP)</span>
+                      </div>
                     </TabsContent>
                     <TabsContent value="preview" className="mt-0">
                       <div className="min-h-[200px] rounded-md border border-input bg-background px-3 py-2 overflow-y-auto">

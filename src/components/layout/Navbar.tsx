@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, Moon, Sun, BookOpen, LogOut, MessageCircle, User } from "lucide-react";
+import { Menu, X, Globe, Moon, Sun, BookOpen, LogOut, MessageCircle, User, Shield } from "lucide-react";
 import { NotificationBell } from './NotificationBell';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useAdmin";
 
 const navLinks = [
   { name: "Tính năng", href: "#features" },
@@ -18,6 +19,7 @@ export const Navbar = () => {
   const [isDark, setIsDark] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { data: adminRole } = useIsAdmin();
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -94,6 +96,11 @@ export const Navbar = () => {
               {user ? (
                 <>
                   <NotificationBell />
+                  {adminRole && (
+                    <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
+                      <Link to="/admin"><Shield className="w-5 h-5 text-primary" /></Link>
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
                     <Link to="/profile"><User className="w-5 h-5" /></Link>
                   </Button>

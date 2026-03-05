@@ -14,6 +14,7 @@ import PostDetail from "./pages/PostDetail";
 import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/chat" element={<ChatDemo />} />
             <Route path="/forum" element={<Forum />} />
             <Route path="/forum/post/:postId" element={<PostDetail />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/messages" element={<Messages />} />

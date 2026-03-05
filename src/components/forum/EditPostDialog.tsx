@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { useForumCategories } from '@/hooks/useForum';
 import { useEditPost } from '@/hooks/usePostActions';
+import { ImageUploadButton } from './ImageUploadButton';
 
 const editPostSchema = z.object({
   title: z.string().min(5, 'Tiêu đề phải có ít nhất 5 ký tự').max(200),
@@ -175,6 +176,15 @@ export function EditPostDialog({ open, onOpenChange, post }: EditPostDialogProps
                           {...field}
                         />
                       </FormControl>
+                      <div className="flex items-center gap-2 mt-1">
+                        <ImageUploadButton
+                          onImageUploaded={(url) => {
+                            const current = form.getValues('content');
+                            form.setValue('content', current + `\n![image](${url})\n`);
+                          }}
+                        />
+                        <span className="text-xs text-muted-foreground">Tối đa 5MB</span>
+                      </div>
                     </TabsContent>
                     <TabsContent value="preview" className="mt-0">
                       <div className="min-h-[200px] rounded-md border border-input bg-background px-3 py-2 overflow-y-auto">
