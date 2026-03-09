@@ -14,38 +14,38 @@ const features = [
   {
     icon: MessageCircle,
     title: "Nhắn tin & Trao đổi",
-    description: "Chat 1-1 và nhóm, chia sẻ tài liệu, luyện ngoại ngữ với bạn bè khắp thế giới.",
+    description: "Chat 1-1 realtime, gửi tin nhắn trực tiếp giữa các thành viên với thông báo tức thì và quản lý hội thoại.",
     gradient: "from-blue-500 to-cyan-500",
-  },
-  {
-    icon: CheckSquare,
-    title: "Daily Checklist",
-    description: "Tạo nhiệm vụ hàng ngày, theo dõi streak và xây dựng thói quen học tập bền vững.",
-    gradient: "from-primary to-emerald-400",
   },
   {
     icon: Users,
     title: "Diễn đàn Sinh viên",
-    description: "Chia sẻ kiến thức, tài liệu và kinh nghiệm. Tìm kiếm theo môn học, ngôn ngữ.",
+    description: "Đăng bài Markdown với upload ảnh, vote up/down, bình luận phân cấp 5 cấp, lọc theo danh mục, tag và 9 ngôn ngữ.",
     gradient: "from-secondary to-pink-500",
   },
   {
     icon: Bot,
     title: "AI Tutor đa ngôn ngữ",
-    description: "Chatbot AI hỗ trợ giải thích bài học, tóm tắt kiến thức, luyện ngoại ngữ 24/7.",
+    description: "Chatbot AI hỗ trợ giải thích bài học, tóm tắt kiến thức, trả lời câu hỏi học tập 24/7 với nhiều model AI.",
     gradient: "from-orange-500 to-amber-500",
   },
   {
     icon: BookOpen,
     title: "Study Room",
-    description: "Phòng học ảo với Pomodoro timer, chat nhóm và chia sẻ tài liệu real-time.",
+    description: "Phòng học ảo công khai/riêng tư, theo dõi trạng thái tập trung realtime và quản lý thành viên.",
     gradient: "from-violet-500 to-purple-500",
   },
   {
-    icon: Globe,
-    title: "Cộng đồng Toàn cầu",
-    description: "Kết nối với 50,000+ sinh viên từ 120+ quốc gia, học tập không biên giới.",
+    icon: Shield,
+    title: "Quản trị & Kiểm duyệt",
+    description: "Hệ thống admin với báo cáo nội dung, ghim/khóa/xóa bài, thống kê cộng đồng và phân quyền admin/moderator.",
     gradient: "from-rose-500 to-red-500",
+  },
+  {
+    icon: Globe,
+    title: "Reputation & Hồ sơ",
+    description: "Hệ thống điểm uy tín tự động, huy hiệu thành tích, hồ sơ cá nhân với thống kê bài viết, bình luận và lượt vote.",
+    gradient: "from-primary to-emerald-400",
   },
 ];
 
