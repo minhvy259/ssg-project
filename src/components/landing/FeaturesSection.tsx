@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 import { 
   MessageCircle, 
-  CheckSquare, 
   Users, 
   Bot, 
   BookOpen,
   Flame,
   Globe,
+  Shield,
   Zap
 } from "lucide-react";
 
