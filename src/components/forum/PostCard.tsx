@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ArrowBigUp, ArrowBigDown, MessageCircle, Bookmark, Eye, Pin } from 'lucide-react';
+import { ArrowBigUp, ArrowBigDown, MessageCircle, Bookmark, Eye, Pin, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -138,6 +138,16 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
             <span className="flex items-center gap-1">
               <Eye className="h-4 w-4" /> {post.view_count}
             </span>
+            {post.linked_room_id && (
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <Users className="h-4 w-4" />
+                <span className="truncate max-w-[120px]">
+                  Phòng học: {post.linked_room_name || 'Đang hoạt động'}
+                  {typeof post.linked_room_participants_count === 'number' &&
+                    ` · ${post.linked_room_participants_count} người`}
+                </span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -241,6 +251,16 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
               <span className="flex items-center gap-1">
                 <Eye className="h-4 w-4" /> {post.view_count}
               </span>
+              {post.linked_room_id && (
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                  <Users className="h-4 w-4" />
+                  <span className="truncate max-w-[140px]">
+                    Study Room
+                    {typeof post.linked_room_participants_count === 'number' &&
+                      ` · ${post.linked_room_participants_count} người`}
+                  </span>
+                </span>
+              )}
               <Button
                 variant="ghost"
                 size="sm"

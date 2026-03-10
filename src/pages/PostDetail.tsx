@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   Trash2,
   Edit,
+  Users,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -38,6 +39,8 @@ import { useVotePost, useToggleSavePost } from '@/hooks/useForum';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useStudyRooms } from '@/hooks/useStudyRooms';
+import { supabase } from '@/integrations/supabase/client';
 
 const languageFlags: Record<string, string> = {
   en: '🇺🇸',
@@ -56,6 +59,7 @@ export default function PostDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { createRoom } = useStudyRooms();
   
   const { data: post, isLoading, error } = usePostDetail(postId);
   const votePost = useVotePost();
@@ -101,6 +105,48 @@ export default function PostDetail() {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleCreateStudyRoomForPost = async () => {
+    if (!user) {
+      toast({
+        title: 'Vui lòng đăng nhập',
+        description: 'Bạn cần đăng nhập để tạo Study Room.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!post) return;
+
+    const roomName = post.title.slice(0, 80);
+    const roomId = await createRoom(
+      roomName,
+      `Phòng thảo luận cho bài viết: ${post.title}`,
+      true
+    );
+
+    if (!roomId) return;
+
+    const { data, error } = await supabase.rpc('link_study_room_to_post', {
+      p_post_id: post.id,
+      p_room_id: roomId,
+    });
+
+    if (error || !(data as { success: boolean })?.success) {
+      toast({
+        title: 'Không thể liên kết Study Room',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Đã tạo Study Room',
+      description: 'Bạn sẽ được chuyển đến phòng học mới.',
+    });
+
+    navigate(`/study-room/${roomId}`);
   };
 
   if (isLoading) {
@@ -311,7 +357,7 @@ export default function PostDetail() {
                     <Separator className="mb-4" />
 
                     {/* Footer actions */}
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MessageCircle className="h-4 w-4" />
                         {post.comment_count} bình luận
@@ -343,6 +389,29 @@ export default function PostDetail() {
                         <Share2 className="h-4 w-4 mr-1" />
                         Chia sẻ
                       </Button>
+
+                      {/* Study Room link */}
+                      {post.linked_room_id ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="ml-auto"
+                          onClick={() => navigate(`/study-room/${post.linked_room_id}`)}
+                        >
+                          <Users className="h-4 w-4 mr-1" />
+                          Vào phòng học: {post.linked_room_name || 'Study Room'}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="ml-auto"
+                          onClick={handleCreateStudyRoomForPost}
+                        >
+                          <Users className="h-4 w-4 mr-1" />
+                          Tạo Study Room cho chủ đề này
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

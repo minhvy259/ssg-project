@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +23,9 @@ export interface ForumPost {
   created_at: string;
   tags: { id: string; name: string; slug: string }[];
   user_vote: number | null;
+  linked_room_id?: string | null;
+  linked_room_name?: string | null;
+  linked_room_participants_count?: number | null;
 }
 
 export interface ForumCategory {
@@ -78,11 +81,47 @@ export function useForumPosts(options: UseForumPostsOptions = {}) {
   });
 }
 
+export function useForumPostsInfinite(options: UseForumPostsOptions = {}) {
+  const {
+    sort = 'hot',
+    categoryId,
+    tagSlug,
+    language,
+    search,
+    authorId,
+    limit = 20,
+  } = options;
+
+  return useInfiniteQuery({
+    queryKey: ['forum-posts-infinite', sort, categoryId, tagSlug, language, search, authorId, limit],
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < limit ? undefined : allPages.length * limit,
+    queryFn: async ({ pageParam }) => {
+      const offset = pageParam as number;
+
+      const { data, error } = await supabase.rpc('get_forum_posts', {
+        p_sort: sort,
+        p_category_id: categoryId || null,
+        p_tag_slug: tagSlug || null,
+        p_language: language || null,
+        p_search: search || null,
+        p_author_id: authorId || null,
+        p_limit: limit,
+        p_offset: offset,
+      });
+
+      if (error) throw error;
+      return (data || []) as ForumPost[];
+    },
+  });
+}
+
 export function useSavedPosts(limit = 20, offset = 0) {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['saved-posts', limit, offset],
+    queryKey: ['saved-posts', user?.id, limit, offset],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_saved_posts', {
         p_limit: limit,

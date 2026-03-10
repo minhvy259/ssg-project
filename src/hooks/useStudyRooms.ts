@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -41,7 +41,7 @@ export function useStudyRooms() {
   const { toast } = useToast();
 
   // Fetch active rooms using RPC function
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase.rpc('get_active_rooms');
 
@@ -57,7 +57,7 @@ export function useStudyRooms() {
       setRooms((data as StudyRoom[]) || []);
     }
     setLoading(false);
-  };
+  }, [toast]);
 
   // Create a new room using RPC function
   const createRoom = async (
@@ -230,7 +230,13 @@ export function useStudyRooms() {
   };
 
   useEffect(() => {
-    fetchRooms();
+    let isMounted = true;
+
+    const loadInitialRooms = async () => {
+      await fetchRooms();
+    };
+
+    loadInitialRooms();
 
     // Subscribe to realtime updates for rooms
     const roomsChannel = supabase
@@ -243,15 +249,18 @@ export function useStudyRooms() {
           table: 'study_rooms',
         },
         () => {
-          fetchRooms();
+          if (isMounted) {
+            fetchRooms();
+          }
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(roomsChannel);
     };
-  }, []);
+  }, [fetchRooms]);
 
   return {
     rooms,
@@ -268,7 +277,7 @@ export function useRoomParticipants(roomId: string | null) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchParticipants = async () => {
+  const fetchParticipants = useCallback(async () => {
     if (!roomId) {
       setParticipants([]);
       setLoading(false);
@@ -289,7 +298,7 @@ export function useRoomParticipants(roomId: string | null) {
       setParticipants((data as Participant[]) || []);
     }
     setLoading(false);
-  };
+  }, [roomId]);
 
   useEffect(() => {
     fetchParticipants();

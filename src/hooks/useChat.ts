@@ -62,7 +62,7 @@ export const useChat = (conversationId?: string) => {
   };
 
   const sendMessage = useCallback(
-    async (userMessage: string, useStreaming = true) => {
+    async (userMessage: string, useStreaming = false) => {
       if (!userMessage.trim() || loading) return;
 
       setError(null);
@@ -121,21 +121,18 @@ export const useChat = (conversationId?: string) => {
         
         // Xóa user message nếu request thất bại
         setMessages(messages);
-        
+
         let errorMessage = 'Có lỗi xảy ra. Vui lòng thử lại.';
-        
+
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
-            errorMessage = 'Request đã bị hủy';
-          } else if (err.message.includes('API error')) {
-            errorMessage = 'Lỗi kết nối API. Vui lòng kiểm tra API key.';
-          } else if (err.message.includes('Network')) {
-            errorMessage = 'Lỗi mạng. Vui lòng kiểm tra kết nối internet.';
+            errorMessage = 'Yêu cầu đã bị hủy.';
           } else {
+            // Ưu tiên giữ nguyên thông điệp chi tiết từ service (chatgptService)
             errorMessage = err.message;
           }
         }
-        
+
         setError(errorMessage);
         console.error('Chat error:', err);
       } finally {

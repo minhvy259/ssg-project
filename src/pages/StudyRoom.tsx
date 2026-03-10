@@ -14,6 +14,8 @@ import { Navbar } from '@/components/layout/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudyRooms, useRoomParticipants, StudyRoom as StudyRoomType } from '@/hooks/useStudyRooms';
 import { supabase } from '@/integrations/supabase/client';
+import { useRoomTimer } from '@/hooks/useRoomTimer';
+import { RoomChat } from '@/components/study-room/RoomChat';
 
 export default function StudyRoom() {
   const { roomId } = useParams();
@@ -24,7 +26,6 @@ export default function StudyRoom() {
   
   const [currentRoom, setCurrentRoom] = useState<StudyRoomType | null>(null);
   const [time, setTime] = useState(25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
@@ -64,22 +65,31 @@ export default function StudyRoom() {
     } else {
       setCurrentRoom(null);
     }
-  }, [roomId, user]);
+  }, [roomId, user, joinRoom]);
 
-  // Pomodoro timer
+  const { state: timerState, startFocus, startBreak } = useRoomTimer(roomId || null);
+
+  // Pomodoro timer đồng bộ giữa các thành viên trong phòng
   useEffect(() => {
-    if (!isRunning) return;
-    const interval = setInterval(() => {
-      setTime((t) => {
-        if (t <= 0) {
-          setIsRunning(false);
-          return isOnBreak ? 25 * 60 : 5 * 60;
-        }
-        return t - 1;
-      });
-    }, 1000);
+    if (!timerState || !timerState.phase_end_at || timerState.current_phase === 'idle') {
+      setTime(25 * 60);
+      setIsOnBreak(false);
+      return;
+    }
+
+    const updateFromServer = () => {
+      const end = new Date(timerState.phase_end_at).getTime();
+      const now = Date.now();
+      const diffSeconds = Math.max(0, Math.round((end - now) / 1000));
+      setTime(diffSeconds);
+      setIsOnBreak(timerState.current_phase === 'break');
+    };
+
+    updateFromServer();
+
+    const interval = setInterval(updateFromServer, 1000);
     return () => clearInterval(interval);
-  }, [isRunning, isOnBreak]);
+  }, [timerState]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -111,7 +121,6 @@ export default function StudyRoom() {
       await updateStatus(roomId, status);
       setIsOnBreak(status === 'break');
       setTime(status === 'break' ? 5 * 60 : 25 * 60);
-      setIsRunning(false);
     }
   };
 
@@ -264,23 +273,25 @@ export default function StudyRoom() {
                 <div className="font-display text-7xl font-bold gradient-text mb-6">
                   {formatTime(time)}
                 </div>
-                <div className="flex justify-center gap-3 mb-6">
-                  <Button
-                    size="lg"
-                    variant={isRunning ? 'secondary' : 'default'}
-                    onClick={() => setIsRunning(!isRunning)}
-                    className={isRunning ? '' : 'btn-gradient-primary border-0'}
-                  >
-                    {isRunning ? (
-                      <>
-                        <Pause className="w-5 h-5 mr-2" /> Pause
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-5 h-5 mr-2" /> Start
-                      </>
-                    )}
-                  </Button>
+                <div className="flex flex-wrap justify-center gap-3 mb-6">
+                  {user && roomId && (
+                    <>
+                      <Button
+                        size="lg"
+                        className="btn-gradient-primary border-0"
+                        onClick={() => startFocus(25 * 60)}
+                      >
+                        <Play className="w-5 h-5 mr-2" /> Bắt đầu tập trung 25&apos;
+                      </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => startBreak(5 * 60)}
+                      >
+                        <Coffee className="w-5 h-5 mr-2" /> Nghỉ 5&apos;
+                      </Button>
+                    </>
+                  )}
                   {user && (
                     <Button 
                       size="lg" 
@@ -289,11 +300,11 @@ export default function StudyRoom() {
                     >
                       {myStatus === 'focusing' ? (
                         <>
-                          <Coffee className="w-5 h-5 mr-2" /> Take Break
+                          <Timer className="w-5 h-5 mr-2" /> Đánh dấu đang nghỉ
                         </>
                       ) : (
                         <>
-                          <Timer className="w-5 h-5 mr-2" /> Back to Focus
+                          <Timer className="w-5 h-5 mr-2" /> Đánh dấu đang tập trung
                         </>
                       )}
                     </Button>
@@ -308,60 +319,64 @@ export default function StudyRoom() {
               </div>
             </div>
 
-            {/* Participants */}
-            <div className="glass-card p-6 rounded-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Đang trong phòng</h3>
-                <span className="text-xs text-muted-foreground">
-                  {participants.filter(p => p.status === 'focusing').length} đang tập trung
-                </span>
+            {/* Chat + Participants */}
+            <div className="space-y-4">
+              <RoomChat roomId={roomId!} canChat={!!user} />
+
+              <div className="glass-card p-6 rounded-2xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold">Đang trong phòng</h3>
+                  <span className="text-xs text-muted-foreground">
+                    {participants.filter(p => p.status === 'focusing').length} đang tập trung
+                  </span>
+                </div>
+                
+                {participantsLoading ? (
+                  <div className="text-center py-4 text-muted-foreground">Đang tải...</div>
+                ) : participants.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Chưa có ai trong phòng
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {participants.map((p) => (
+                      <motion.div
+                        key={p.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className={`flex items-center gap-3 p-3 rounded-xl ${
+                          p.status === 'focusing' ? 'bg-primary/10' : 'bg-muted/50'
+                        }`}
+                      >
+                        <div className="relative">
+                          <div 
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-primary-foreground font-medium"
+                            style={{ background: 'var(--gradient-primary)' }}
+                          >
+                            {p.full_name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div 
+                            className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card flex items-center justify-center text-xs ${
+                              p.status === 'focusing' ? 'bg-primary' : 'bg-accent'
+                            }`}
+                          >
+                            {p.status === 'focusing' ? '📖' : '☕'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">
+                            {p.full_name || 'Anonymous'}
+                            {p.user_id === user?.id && ' (Bạn)'}
+                          </div>
+                          <div className="text-xs text-muted-foreground capitalize">
+                            {p.status === 'focusing' ? 'Đang tập trung' : 'Nghỉ ngơi'}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
-              
-              {participantsLoading ? (
-                <div className="text-center py-4 text-muted-foreground">Đang tải...</div>
-              ) : participants.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  Chưa có ai trong phòng
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {participants.map((p) => (
-                    <motion.div
-                      key={p.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className={`flex items-center gap-3 p-3 rounded-xl ${
-                        p.status === 'focusing' ? 'bg-primary/10' : 'bg-muted/50'
-                      }`}
-                    >
-                      <div className="relative">
-                        <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-primary-foreground font-medium"
-                          style={{ background: 'var(--gradient-primary)' }}
-                        >
-                          {p.full_name?.[0]?.toUpperCase() || '?'}
-                        </div>
-                        <div 
-                          className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card flex items-center justify-center text-xs ${
-                            p.status === 'focusing' ? 'bg-primary' : 'bg-accent'
-                          }`}
-                        >
-                          {p.status === 'focusing' ? '📖' : '☕'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">
-                          {p.full_name || 'Anonymous'}
-                          {p.user_id === user?.id && ' (Bạn)'}
-                        </div>
-                        <div className="text-xs text-muted-foreground capitalize">
-                          {p.status === 'focusing' ? 'Đang tập trung' : 'Nghỉ ngơi'}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>

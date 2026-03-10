@@ -9,7 +9,7 @@ const navLinks = [
   { name: "Tính năng", href: "#features" },
   { name: "Study Room", href: "/study-room", isRoute: true },
   { name: "Diễn đàn", href: "/forum", isRoute: true },
-  { name: "Cộng đồng", href: "#community" },
+  { name: "Cộng đồng", href: "/c", isRoute: true },
 ];
 
 export const Navbar = () => {

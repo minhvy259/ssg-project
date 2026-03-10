@@ -8,13 +8,12 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import StudyRoom from "./pages/StudyRoom";
-<<<<<<< HEAD
 import ChatDemo from "./pages/ChatDemo";
-=======
 import Forum from "./pages/Forum";
 import PostDetail from "./pages/PostDetail";
->>>>>>> 54631020dd68ac7149c40ef77fe39674e0808965
 import NotFound from "./pages/NotFound";
+import DirectMessagesPage from "./pages/DirectMessages";
+import CommunityPage from "./pages/Community";
 
 const queryClient = new QueryClient();
 
@@ -31,12 +30,18 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/study-room" element={<StudyRoom />} />
             <Route path="/study-room/:roomId" element={<StudyRoom />} />
-<<<<<<< HEAD
+            
+            {/* Routes đã được hợp nhất */}
             <Route path="/chat" element={<ChatDemo />} />
-=======
             <Route path="/forum" element={<Forum />} />
             <Route path="/forum/post/:postId" element={<PostDetail />} />
->>>>>>> 54631020dd68ac7149c40ef77fe39674e0808965
+            {/* Community & Direct Messages */}
+            <Route path="/dm" element={<DirectMessagesPage />} />
+            <Route path="/dm/:conversationId" element={<DirectMessagesPage />} />
+            <Route path="/c" element={<CommunityPage />} />
+            <Route path="/c/:communityId" element={<CommunityPage />} />
+            <Route path="/c/:communityId/ch/:channelId" element={<CommunityPage />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

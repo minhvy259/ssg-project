@@ -43,6 +43,16 @@ export const chatWithGPT = async (
   messages: ChatMessage[],
   conversationId?: string
 ): Promise<ChatResponse> => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      'Chatbot chưa được cấu hình đầy đủ. Vui lòng kiểm tra lại các biến môi trường VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY/VITE_SUPABASE_PUBLISHABLE_KEY trong file .env.'
+    );
+  }
+
   // Check rate limit
   if (!rateLimiter.canMakeRequest()) {
     const waitTime = rateLimiter.getWaitTime();
@@ -55,17 +65,16 @@ export const chatWithGPT = async (
     rateLimiter.recordRequest();
 
     const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-gpt`,
+      `${supabaseUrl}/functions/v1/chat-gpt`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${supabaseKey}`,
         },
         body: JSON.stringify({
           messages,
           conversationId,
-          model: 'gpt-4o-mini',
         }),
       }
     );
@@ -84,12 +93,24 @@ export const chatWithGPT = async (
     };
   } catch (error) {
     console.error('ChatGPT API error:', error);
-    
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Lỗi kết nối mạng. Vui lòng kiểm tra internet của bạn.');
+
+    if (error instanceof TypeError) {
+      const msg = (error as TypeError).message || '';
+      if (
+        msg.includes('Failed to fetch') ||
+        msg.includes('NetworkError') ||
+        msg.includes('Load failed') ||
+        msg.includes('fetch')
+      ) {
+        throw new Error(
+          'Không thể kết nối tới máy chủ chatbot.\nVui lòng kiểm tra:\n- Kết nối internet của bạn\n- Giá trị VITE_SUPABASE_URL trong file .env\n- Edge Function "chat-gpt" đã được deploy trên Supabase\n- Cấu hình CORS cho Edge Function trong Supabase.'
+        );
+      }
     }
-    
-    throw error;
+
+    throw error instanceof Error
+      ? error
+      : new Error('Có lỗi không xác định xảy ra khi gọi chatbot.');
   }
 };
 
@@ -98,6 +119,16 @@ export const chatWithGPTStream = async (
   onChunk: (chunk: string) => void,
   conversationId?: string
 ): Promise<void> => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      'Chatbot chưa được cấu hình đầy đủ. Vui lòng kiểm tra lại các biến môi trường VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY/VITE_SUPABASE_PUBLISHABLE_KEY trong file .env.'
+    );
+  }
+
   // Check rate limit
   if (!rateLimiter.canMakeRequest()) {
     const waitTime = rateLimiter.getWaitTime();
@@ -110,17 +141,16 @@ export const chatWithGPTStream = async (
     rateLimiter.recordRequest();
 
     const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-gpt`,
+      `${supabaseUrl}/functions/v1/chat-gpt`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${supabaseKey}`,
         },
         body: JSON.stringify({
           messages,
           conversationId,
-          model: 'gpt-4o-mini',
           stream: true,
         }),
       }
@@ -196,11 +226,23 @@ export const chatWithGPTStream = async (
     }
   } catch (error) {
     console.error('ChatGPT Stream error:', error);
-    
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Lỗi kết nối mạng. Vui lòng kiểm tra internet của bạn.');
+
+    if (error instanceof TypeError) {
+      const msg = (error as TypeError).message || '';
+      if (
+        msg.includes('Failed to fetch') ||
+        msg.includes('NetworkError') ||
+        msg.includes('Load failed') ||
+        msg.includes('fetch')
+      ) {
+        throw new Error(
+          'Không thể kết nối tới máy chủ chatbot (stream).\nVui lòng kiểm tra:\n- Kết nối internet của bạn\n- Giá trị VITE_SUPABASE_URL trong file .env\n- Edge Function "chat-gpt" đã được deploy trên Supabase\n- Cấu hình CORS cho Edge Function trong Supabase.'
+        );
+      }
     }
-    
-    throw error;
+
+    throw error instanceof Error
+      ? error
+      : new Error('Có lỗi không xác định xảy ra khi streaming từ chatbot.');
   }
 };

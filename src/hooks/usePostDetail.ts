@@ -28,6 +28,8 @@ export interface PostDetail {
   is_saved: boolean;
   is_author: boolean;
   tags: { id: string; name: string; slug: string }[];
+  linked_room_id?: string | null;
+  linked_room_name?: string | null;
 }
 
 export interface Comment {

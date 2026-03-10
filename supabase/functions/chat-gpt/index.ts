@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 import "https://deno.land/x/dotenv/load.ts";
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 
@@ -14,6 +16,27 @@ interface RequestBody {
   stream?: boolean;
 }
 
+// Chuyển định dạng messages (kiểu OpenAI) sang contents của Gemini
+function mapMessagesToGeminiContents(
+  messages: { role: string; content: string }[],
+) {
+  return messages.map((msg) => {
+    let role: "user" | "model" = "user";
+
+    if (msg.role === "assistant") {
+      role = "model";
+    } else if (msg.role === "system") {
+      // Đưa system prompt vào như user context
+      role = "user";
+    }
+
+    return {
+      role,
+      parts: [{ text: msg.content }],
+    };
+  });
+}
+
 serve(async (req) => {
   // CORS
   if (req.method === "OPTIONS") {
@@ -21,138 +44,98 @@ serve(async (req) => {
   }
 
   try {
-    const { 
-      messages, 
-      model = "gpt-4o-mini", 
-      stream = false 
-    } = (await req.json()) as RequestBody;
+    const { messages } = (await req.json()) as RequestBody;
+    // Danh sách models ưu tiên
+    const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
 
     // Validate messages
     if (!messages || messages.length === 0) {
       throw new Error("Messages array is required");
     }
 
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
-      throw new Error("OpenAI API key not configured");
+      throw new Error("Gemini API key not configured");
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.7,
-        max_tokens: 2000,
-        stream,
-      }),
-    });
+    const contents = mapMessagesToGeminiContents(messages);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenAI error:", errorText);
-      
-      let errorMessage = "OpenAI API error";
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.error?.message || errorMessage;
-      } catch {
-        errorMessage = `${response.status}: ${response.statusText}`;
-      }
-      
-      throw new Error(errorMessage);
-    }
+    let lastError = "";
+    const allErrors: string[] = [];
 
-    // Handle streaming response
-    if (stream) {
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("No response body for streaming");
-      }
+    for (const model of models) {
+      const url =
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-      const encoder = new TextEncoder();
-      const decoder = new TextDecoder();
-
-      const streamResponse = new ReadableStream({
-        async start(controller) {
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              
-              if (done) {
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                controller.close();
-                break;
-              }
-
-              const chunk = decoder.decode(value);
-              const lines = chunk.split("\n").filter(line => line.trim() !== "");
-
-              for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                  const data = line.slice(6);
-                  
-                  if (data === "[DONE]") {
-                    controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                    continue;
-                  }
-
-                  try {
-                    const parsed = JSON.parse(data);
-                    const content = parsed.choices?.[0]?.delta?.content;
-                    
-                    if (content) {
-                      controller.enqueue(
-                        encoder.encode(`data: ${JSON.stringify({ token: content })}\n\n`)
-                      );
-                    }
-                  } catch (e) {
-                    console.error("Error parsing streaming chunk:", e);
-                  }
-                }
-              }
-            }
-          } catch (error) {
-            console.error("Streaming error:", error);
-            controller.error(error);
-          }
-        },
-      });
-
-      return new Response(streamResponse, {
+      const response = await fetch(url, {
+        method: "POST",
         headers: {
-          ...corsHeaders,
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2000,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Gemini error (${model}):`, errorText);
+
+        try {
+          const errorJson = JSON.parse(errorText);
+          lastError = errorJson.error?.message || `${response.status}: ${response.statusText}`;
+        } catch {
+          lastError = `${response.status}: ${response.statusText}`;
+        }
+
+        allErrors.push(`[${model}]: ${lastError}`);
+
+        // Nếu lỗi quota (429) hoặc model không tìm thấy (404/400), thử model tiếp theo
+        const isQuota = lastError.toLowerCase().includes("quota") || response.status === 429;
+        const isNotFound = lastError.toLowerCase().includes("not found") || response.status === 404 || response.status === 400;
+
+        if (isQuota || isNotFound) {
+          console.log(`Model ${model} failed, trying next...`);
+          continue;
+        }
+
+        // Lỗi khác (401, 500...) thì throw ngay, ví dụ 401 là sai key
+        throw new Error(`API Error (${model}): ` + lastError);
+      }
+
+      const data = await response.json();
+      const candidates = data.candidates ?? [];
+      const first = candidates[0];
+
+      const message =
+        first?.content?.parts?.map((p: { text?: string }) => p.text || "")
+          .join("") ?? "";
+
+      const tokens = message.length;
+
+      return new Response(JSON.stringify({ message, tokens }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Handle non-streaming response
-    const data = await response.json();
-    const message = data.choices[0].message.content;
-    const tokens = data.usage.total_tokens;
-
-    return new Response(JSON.stringify({ message, tokens }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Nếu tất cả models đều lỗi
+    throw new Error(allErrors.join(" | ") || "All Gemini models failed");
   } catch (error) {
     console.error("Error:", error);
-    
+
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const statusCode = errorMessage.includes("API key") ? 401 : 500;
-    
+
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { 
-        status: statusCode, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
+      {
+        status: statusCode,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });

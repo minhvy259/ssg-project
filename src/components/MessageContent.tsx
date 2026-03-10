@@ -29,12 +29,13 @@ export const MessageContent = ({ content, isUser }: MessageContentProps) => {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          code({ node, inline, className, children, ...props }) {
+          code({ node, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || '');
             const codeString = String(children).replace(/\n$/, '');
             const codeId = `${match?.[1] || 'code'}-${codeString.slice(0, 20)}`;
+            const isInline = !match && !String(children).includes('\n');
 
-            if (!inline && match) {
+            if (!isInline && match) {
               return (
                 <div className="relative group my-4">
                   <div className="flex items-center justify-between bg-gray-800 text-gray-200 px-4 py-2 rounded-t-lg text-xs font-mono">
