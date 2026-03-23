@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -23,13 +25,14 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/study-room" element={<StudyRoom />} />
-            <Route path="/study-room/:roomId" element={<StudyRoom />} />
+            <Route path="/study-room" element={<ErrorBoundary><StudyRoom /></ErrorBoundary>} />
+            <Route path="/study-room/:roomId" element={<ErrorBoundary><StudyRoom /></ErrorBoundary>} />
             
             {/* Routes đã được hợp nhất */}
             <Route path="/chat" element={<ChatDemo />} />

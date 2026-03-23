@@ -6,52 +6,34 @@
 
 @layer base {
   :root {
-    /* StudyVerse Light Theme - Fresh & Inspiring */
+    /* Light Theme (Default) */
     --background: 210 40% 98%;
     --foreground: 222 47% 11%;
-
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-
-    /* Emerald/Teal - Learning & Growth */
     --primary: 162 63% 41%;
     --primary-foreground: 0 0% 100%;
-
-    /* Soft Purple - Community */
     --secondary: 262 52% 65%;
     --secondary-foreground: 0 0% 100%;
-
-    /* Muted backgrounds */
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-
-    /* Warm accent - Energy */
     --accent: 24 95% 53%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 162 63% 41%;
-
     --radius: 0.75rem;
-
-    /* Custom StudyVerse tokens */
     --gradient-primary: linear-gradient(135deg, hsl(162 63% 41%) 0%, hsl(186 72% 45%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(262 52% 65%) 0%, hsl(280 67% 60%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(38 92% 50%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(210 40% 98%) 0%, hsl(210 50% 95%) 50%, hsl(262 30% 96%) 100%);
-    
     --shadow-glow: 0 0 40px -10px hsl(162 63% 41% / 0.4);
     --shadow-card: 0 4px 24px -4px hsl(222 47% 11% / 0.08);
     --shadow-hover: 0 12px 40px -8px hsl(222 47% 11% / 0.15);
-
-    /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 162 63% 41%;
@@ -62,53 +44,39 @@
     --sidebar-ring: 162 63% 41%;
   }
 
+  /* Dark Theme */
   .dark {
-    /* StudyVerse Dark Theme - Focused & Calm */
-    --background: 222 47% 8%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-
-    --card: 222 47% 11%;
+    --card: 222 47% 14%;
     --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 11%;
+    --popover: 222 47% 14%;
     --popover-foreground: 210 40% 98%;
-
-    /* Brighter Emerald for dark mode */
     --primary: 162 72% 48%;
     --primary-foreground: 222 47% 8%;
-
-    /* Soft Purple */
-    --secondary: 262 60% 70%;
-    --secondary-foreground: 222 47% 8%;
-
+    --secondary: 262 52% 65%;
+    --secondary-foreground: 0 0% 100%;
     --muted: 222 40% 15%;
-    --muted-foreground: 215 20% 65%;
-
-    /* Warm accent */
-    --accent: 24 100% 58%;
-    --accent-foreground: 222 47% 8%;
-
+    --muted-foreground: 215 16% 70%;
+    --accent: 24 95% 53%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 222 40% 18%;
     --input: 222 40% 18%;
     --ring: 162 72% 48%;
-
     --gradient-primary: linear-gradient(135deg, hsl(162 72% 48%) 0%, hsl(186 80% 50%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(262 60% 70%) 0%, hsl(280 70% 65%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(24 100% 58%) 0%, hsl(38 95% 55%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(222 47% 8%) 0%, hsl(222 47% 10%) 50%, hsl(262 40% 12%) 100%);
-
+    --gradient-hero: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(222 47% 14%) 50%, hsl(262 40% 16%) 100%);
     --shadow-glow: 0 0 60px -10px hsl(162 72% 48% / 0.3);
-    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.4);
-    --shadow-hover: 0 12px 40px -8px hsl(0 0% 0% / 0.5);
-
-    --sidebar-background: 222 47% 10%;
+    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
+    --shadow-hover: 0 12px 40px -8px hsl(0 0% 0% / 0.4);
+    --sidebar-background: 222 47% 12%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 162 72% 48%;
     --sidebar-primary-foreground: 222 47% 8%;
-    --sidebar-accent: 222 40% 15%;
+    --sidebar-accent: 222 40% 16%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222 40% 18%;
     --sidebar-ring: 162 72% 48%;
@@ -121,8 +89,12 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased min-h-screen;
     font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  #root {
+    min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -212,92 +184,4 @@
   .text-balance {
     text-wrap: balance;
   }
-}
-
-/* Markdown and Code Highlighting Styles */
-@layer components {
-  .prose {
-    @apply text-gray-800 dark:text-gray-200;
-  }
-
-  .prose code {
-    @apply bg-gray-100 dark:bg-gray-800 text-sm rounded px-1.5 py-0.5 font-mono;
-  }
-
-  .prose pre {
-    @apply bg-gray-900 rounded-lg overflow-x-auto my-4;
-  }
-
-  .prose pre code {
-    @apply bg-transparent text-gray-100 p-0;
-  }
-
-  .prose a {
-    @apply text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline;
-  }
-
-  .prose strong {
-    @apply font-semibold text-gray-900 dark:text-gray-100;
-  }
-
-  .prose em {
-    @apply italic;
-  }
-
-  .prose blockquote {
-    @apply border-l-4 border-blue-500 pl-4 italic text-gray-700 dark:text-gray-300;
-  }
-
-  .prose table {
-    @apply w-full border-collapse;
-  }
-
-  .prose th {
-    @apply bg-gray-100 dark:bg-gray-800 font-semibold text-left p-2 border border-gray-300 dark:border-gray-700;
-  }
-
-  .prose td {
-    @apply p-2 border border-gray-300 dark:border-gray-700;
-  }
-
-  .prose ul {
-    @apply list-disc pl-6 space-y-1;
-  }
-
-  .prose ol {
-    @apply list-decimal pl-6 space-y-1;
-  }
-
-  .prose li {
-    @apply text-gray-800 dark:text-gray-200;
-  }
-
-  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-    @apply font-bold text-gray-900 dark:text-gray-100;
-  }
-
-  .prose img {
-    @apply rounded-lg max-w-full h-auto;
-  }
-
-  .prose hr {
-    @apply border-gray-300 dark:border-gray-700 my-4;
-  }
-}
-
-/* Custom scrollbar for chat */
-.chat-scrollarea::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chat-scrollarea::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800 rounded;
-}
-
-.chat-scrollarea::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded;
-}
-
-.chat-scrollarea::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
 }

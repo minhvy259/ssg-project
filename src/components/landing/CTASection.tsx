@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const benefits = [
   "Miễn phí mãi mãi",
@@ -53,20 +54,16 @@ export const CTASection = () => {
                 đang cải thiện kết quả học tập mỗi ngày.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <div className="flex justify-center mb-8">
                 <Button 
                   size="lg" 
                   className="bg-white text-primary hover:bg-white/90 font-semibold h-14 px-8 text-base group"
+                  asChild
                 >
-                  Bắt đầu miễn phí
-                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="border-white/30 text-white hover:bg-white/10 h-14 px-8 text-base"
-                >
-                  Xem video giới thiệu
+                  <Link to="/auth">
+                    Bắt đầu miễn phí
+                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </Button>
               </div>
 

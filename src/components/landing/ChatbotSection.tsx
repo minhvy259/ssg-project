@@ -80,18 +80,6 @@ export const ChatbotSection = () => {
                 </motion.div>
               ))}
             </div>
-
-            <Button
-              className="btn-gradient-secondary border-0"
-              onClick={() =>
-                document
-                  .querySelector('[data-chatbot-section]')
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-            >
-              <Bot className="w-4 h-4 mr-2" />
-              Thử ngay StudyBot
-            </Button>
           </motion.div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageCircle, SortAsc } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,11 +29,19 @@ export function CommentSection({ postId, postAuthorId, commentCount, isLocked }:
   const [sortType, setSortType] = useState<CommentSortType>('best');
   const [newComment, setNewComment] = useState('');
   
-  const { data: comments, isLoading } = usePostComments(postId, sortType);
+  const { data: comments, isLoading, error } = usePostComments(postId, sortType);
   const createComment = useCreateComment();
   
+  // Log error for debugging
+  useEffect(() => {
+    if (error) {
+      console.error('CommentSection error:', error);
+    }
+  }, [error]);
+  
   // Get only top-level comments for rendering (replies are handled by CommentItem)
-  const topLevelComments = comments?.filter(c => c.parent_id === null) || [];
+  // Handle both null and undefined parent_id for top-level comments
+  const topLevelComments = comments?.filter(c => !c.parent_id) || [];
 
   const handleSubmitComment = async () => {
     if (!user) {
@@ -120,6 +128,19 @@ export function CommentSection({ postId, postAuthorId, commentCount, isLocked }:
               </div>
             </div>
           ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <div className="text-5xl mb-4">⚠️</div>
+          <p className="text-destructive mb-2">Không thể tải bình luận</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+      ) : comments?.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-5xl mb-4">💬</div>
+          <p className="text-muted-foreground">
+            Chưa có bình luận nào. Hãy là người đầu tiên!
+          </p>
         </div>
       ) : topLevelComments.length > 0 ? (
         <div className="space-y-4">

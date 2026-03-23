@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Play, Pause, Users, MessageSquare, Coffee, Timer, ArrowLeft, 
-  Plus, Lock, Unlock, LogOut
+  Plus, Lock, Unlock, LogOut, Video, VideoOff, Mic, MicOff, Camera, CameraOff, Phone, PhoneOff,
+  Hand, Monitor, User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import { useStudyRooms, useRoomParticipants, StudyRoom as StudyRoomType } from '
 import { supabase } from '@/integrations/supabase/client';
 import { useRoomTimer } from '@/hooks/useRoomTimer';
 import { RoomChat } from '@/components/study-room/RoomChat';
+import { VideoCall, getOrCreateDailyRoom, VideoParticipant } from '@/components/study-room/VideoCall';
 
 export default function StudyRoom() {
   const { roomId } = useParams();
@@ -31,6 +33,19 @@ export default function StudyRoom() {
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomDesc, setNewRoomDesc] = useState('');
   const [newRoomPublic, setNewRoomPublic] = useState(true);
+
+  // Video/Audio state
+  const [isVideoOn, setIsVideoOn] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(false);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Daily.co video call state
+  const [dailyRoomUrl, setDailyRoomUrl] = useState<string | null>(null);
+  const [isInCall, setIsInCall] = useState(false);
+  const [raiseHand, setRaiseHand] = useState(false);
+  const [videoParticipants, setVideoParticipants] = useState<VideoParticipant[]>([]);
 
   // Fetch current room details
   useEffect(() => {
@@ -55,6 +70,8 @@ export default function StudyRoom() {
             created_at: data.created_at,
             owner_name: null, // Will be fetched separately if needed
           });
+          // Daily.co room URL (sync)
+          setDailyRoomUrl(getOrCreateDailyRoom(data.name || ''));
           // Auto-join room when visiting
           if (user) {
             joinRoom(roomId);
@@ -64,10 +81,11 @@ export default function StudyRoom() {
       fetchRoom();
     } else {
       setCurrentRoom(null);
+      setDailyRoomUrl(null);
     }
   }, [roomId, user, joinRoom]);
 
-  const { state: timerState, startFocus, startBreak } = useRoomTimer(roomId || null);
+  const { state: timerState, timerError, startFocus, startBreak } = useRoomTimer(roomId || null);
 
   // Pomodoro timer đồng bộ giữa các thành viên trong phòng
   useEffect(() => {
@@ -123,6 +141,113 @@ export default function StudyRoom() {
       setTime(status === 'break' ? 5 * 60 : 25 * 60);
     }
   };
+
+  // Video/Audio controls
+  const toggleCamera = async () => {
+    setMediaError(null);
+    if (isVideoOn) {
+      // Turn off video - stop video tracks but keep audio if mic is on
+      if (localStream) {
+        localStream.getVideoTracks().forEach(track => track.stop());
+        // If mic is also on, create new stream without video
+        if (isMicOn) {
+          try {
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+              const newStream = new MediaStream([audioTrack]);
+              setLocalStream(newStream);
+            }
+          } catch (err) {
+            console.error('Error handling stream:', err);
+          }
+        } else {
+          setLocalStream(null);
+        }
+      }
+      setIsVideoOn(false);
+    } else {
+      // Turn on video
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: isMicOn 
+        });
+        setLocalStream(stream);
+        setIsVideoOn(true);
+      } catch (err: any) {
+        console.error('Error accessing camera:', err);
+        if (err.name === 'NotAllowedError') {
+          setMediaError('Bạn cần cho phép truy cập camera');
+        } else if (err.name === 'NotFoundError') {
+          setMediaError('Không tìm thấy camera');
+        } else {
+          setMediaError('Không thể truy cập camera: ' + err.message);
+        }
+      }
+    }
+  };
+
+  const toggleMic = async () => {
+    setMediaError(null);
+    if (isMicOn) {
+      // Turn off mic
+      if (localStream) {
+        localStream.getAudioTracks().forEach(track => track.stop());
+        // If video is also on, create new stream without audio
+        if (isVideoOn) {
+          try {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+              const newStream = new MediaStream([videoTrack]);
+              setLocalStream(newStream);
+            }
+          } catch (err) {
+            console.error('Error handling stream:', err);
+          }
+        } else {
+          setLocalStream(null);
+        }
+      }
+      setIsMicOn(false);
+    } else {
+      // Turn on mic
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: isVideoOn, 
+          audio: true 
+        });
+        setLocalStream(stream);
+        setIsMicOn(true);
+        // If video was off, turn it on too for better UX
+        if (!isVideoOn) {
+          setIsVideoOn(true);
+        }
+      } catch (err: any) {
+        console.error('Error accessing microphone:', err);
+        if (err.name === 'NotAllowedError') {
+          setMediaError('Bạn cần cho phép truy cập microphone');
+        } else if (err.name === 'NotFoundError') {
+          setMediaError('Không tìm thấy microphone');
+        } else {
+          setMediaError('Không thể truy cập microphone: ' + err.message);
+        }
+      }
+    }
+  };
+
+  // Cleanup video stream on unmount
+  useEffect(() => {
+    return () => {
+      localStream?.getTracks().forEach(track => track.stop());
+    };
+  }, [localStream]);
+
+  // Attach video to video element
+  useEffect(() => {
+    if (videoRef.current && localStream) {
+      videoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
 
   const myStatus = participants.find(p => p.user_id === user?.id)?.status || 'focusing';
 
@@ -264,15 +389,192 @@ export default function StudyRoom() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Pomodoro Timer */}
-            <div className="lg:col-span-2">
+            {/* Left column - Video trước, rồi Timer */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Video Call - Luôn hiện khi đã đăng nhập và có phòng */}
+              {user && roomId && (
+                <div className="glass-card p-4 rounded-3xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Video className="w-4 h-4" />
+                      Camera & Microphone
+                    </h3>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={localStream?.getVideoTracks().length ? "default" : "outline"}
+                        size="sm"
+                        onClick={toggleCamera}
+                        className={localStream?.getVideoTracks().length ? "btn-gradient-primary border-0" : ""}
+                        title={localStream?.getVideoTracks().length ? "Tắt camera" : "Bật camera"}
+                      >
+                        {localStream?.getVideoTracks().length ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
+                      </Button>
+                      <Button
+                        variant={localStream?.getAudioTracks().length ? "default" : "outline"}
+                        size="sm"
+                        onClick={toggleMic}
+                        className={localStream?.getAudioTracks().length ? "btn-gradient-primary border-0" : ""}
+                        title={localStream?.getAudioTracks().length ? "Tắt mic" : "Bật mic"}
+                      >
+                        {localStream?.getAudioTracks().length ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                      </Button>
+                      <Button
+                        variant={isInCall ? "destructive" : "default"}
+                        size="sm"
+                        onClick={() => setIsInCall(!isInCall)}
+                        className={isInCall ? "" : "btn-gradient-primary border-0"}
+                      >
+                        {isInCall ? (
+                          <>
+                            <PhoneOff className="w-4 h-4 mr-2" />
+                            Rời
+                          </>
+                        ) : (
+                          <>
+                            <Phone className="w-4 h-4 mr-2" />
+                            Gọi video
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden min-h-[200px]">
+                    {/* Local camera preview - hiển thị khi đã bật camera */}
+                    {localStream?.getVideoTracks().length ? (
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
+                      />
+                    ) : null}
+                    
+                    {/* Nội dung khi không gọi video */}
+                    {!isInCall && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center p-4">
+                          {localStream?.getVideoTracks().length ? null : (
+                            <>
+                              <VideoOff className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+                            </>
+                          )}
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {!localStream?.getVideoTracks().length 
+                              ? "Bấm icon camera ở trên để xem mình" 
+                              : "Bạn đang hiện camera - bấm &quot;Gọi video&quot; để gọi nhóm"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Chia sẻ link phòng để mọi người cùng vào!
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Video call khi đang gọi */}
+                    {dailyRoomUrl && isInCall && (
+                      <VideoCall 
+                        roomUrl={dailyRoomUrl} 
+                        onLeave={() => setIsInCall(false)}
+                        onParticipantsChange={setVideoParticipants}
+                        raiseHand={raiseHand}
+                        onRaiseHand={setRaiseHand}
+                      />
+                    )}
+                    
+                    {/* Loading khi chưa có URL */}
+                    {!dailyRoomUrl && isInCall && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <p className="text-sm text-muted-foreground">Đang kết nối...</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Mic indicator + Video status */}
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {localStream?.getAudioTracks().length ? (
+                        <div className="flex items-center gap-1.5 text-sm text-green-500">
+                          <Mic className="w-4 h-4" />
+                          <span>Mic bật</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <MicOff className="w-4 h-4" />
+                          <span>Mic tắt</span>
+                        </div>
+                      )}
+                      {localStream?.getVideoTracks().length ? (
+                        <div className="flex items-center gap-1.5 text-sm text-green-500">
+                          <Camera className="w-4 h-4" />
+                          <span>Camera bật</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <VideoOff className="w-4 h-4" />
+                          <span>Camera tắt</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Raise hand indicator */}
+                    {raiseHand && (
+                      <div className="flex items-center gap-1.5 text-sm text-yellow-500 animate-pulse">
+                        <Hand className="w-4 h-4" />
+                        <span>Đang giơ tay</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Participants list when in call */}
+                  {isInCall && videoParticipants.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border/50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium">Người tham gia ({videoParticipants.length})</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {videoParticipants.map((p) => (
+                          <div 
+                            key={p.session_id} 
+                            className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full text-xs"
+                          >
+                            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                              <User className="w-3 h-3 text-primary" />
+                            </div>
+                            <span className="truncate max-w-[100px]">{p.user_name}</span>
+                            {!p.audio && <MicOff className="w-3 h-3 text-red-400" />}
+                            {!p.video && <VideoOff className="w-3 h-3 text-red-400" />}
+                            {p.screen && <Monitor className="w-3 h-3 text-green-500" />}
+                            {p.session_id === 'local' && <span className="text-muted-foreground">(bạn)</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Pomodoro Timer */}
               <div className="glass-card p-8 rounded-3xl text-center">
-                <div className="text-sm text-muted-foreground mb-2 uppercase tracking-wider">
+                <div className="text-sm text-muted-foreground mb-1 uppercase tracking-wider">
                   {isOnBreak ? 'Break Time' : 'Focus Time'}
                 </div>
+                {timerState?.timer_owner_name && timerState.current_phase !== 'idle' && (
+                  <div className="text-xs text-primary mb-2 flex items-center justify-center gap-1">
+                    <Timer className="w-3 h-3" />
+                    <span>{timerState.timer_owner_name} đang bật timer</span>
+                  </div>
+                )}
                 <div className="font-display text-7xl font-bold gradient-text mb-6">
                   {formatTime(time)}
                 </div>
+                {timerError && (
+                  <div className="text-xs text-destructive bg-destructive/10 px-3 py-2 rounded-xl mb-4 text-center">
+                    {timerError}
+                  </div>
+                )}
                 <div className="flex flex-wrap justify-center gap-3 mb-6">
                   {user && roomId && (
                     <>

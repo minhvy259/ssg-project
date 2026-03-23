@@ -81,15 +81,56 @@ export function usePostComments(postId: string | undefined, sort: CommentSortTyp
     queryFn: async () => {
       if (!postId) throw new Error('Post ID is required');
       
+      // Try using RPC first
       const { data, error } = await supabase.rpc('get_post_comments', {
         p_post_id: postId,
         p_sort: sort,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC Error fetching comments:', error);
+        // Fallback: try direct query if RPC fails
+        console.log('Trying direct query as fallback...');
+        
+        let query = supabase
+          .from('forum_comments')
+          .select('*')
+          .eq('post_id', postId)
+          .order('created_at', { ascending: sort === 'old' });
+        
+        const { data: fallbackData, error: fallbackError } = await query;
+        
+        if (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+          throw fallbackError;
+        }
+        
+        // Transform fallback data to match Comment interface
+        return (fallbackData || []).map(c => ({
+          id: c.id,
+          content: c.content,
+          author_id: c.author_id,
+          author_name: null,
+          author_avatar: null,
+          parent_id: c.parent_id,
+          upvotes: c.upvotes || 0,
+          downvotes: c.downvotes || 0,
+          is_accepted: c.is_accepted || false,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+          user_vote: null,
+          is_author: false,
+          reply_count: 0,
+          depth: 0,
+        })) as Comment[];
+      }
+      
+      // Debug log
+      console.log('Comments fetched via RPC:', data?.length || 0);
       return (data || []) as Comment[];
     },
     enabled: !!postId,
+    retry: 2,
   });
 }
 

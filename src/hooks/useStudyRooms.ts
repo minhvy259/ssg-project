@@ -13,6 +13,7 @@ export interface StudyRoom {
   created_by: string;
   created_at: string;
   owner_name: string | null;
+  password: string | null;
 }
 
 export interface Participant {
@@ -64,7 +65,8 @@ export function useStudyRooms() {
     name: string, 
     description: string, 
     isPublic: boolean, 
-    maxParticipants: number = 10
+    maxParticipants: number = 10,
+    password?: string
   ): Promise<string | null> => {
     if (!user) {
       toast({
@@ -80,6 +82,7 @@ export function useStudyRooms() {
       p_description: description || null,
       p_is_public: isPublic,
       p_max_participants: maxParticipants,
+      p_password: password || null,
     });
 
     if (error) {
@@ -118,18 +121,19 @@ export function useStudyRooms() {
   };
 
   // Join a room using RPC function
-  const joinRoom = async (roomId: string): Promise<boolean> => {
+  const joinRoom = async (roomId: string, password?: string): Promise<{ success: boolean; needsPassword?: boolean }> => {
     if (!user) {
       toast({
         title: 'Lỗi',
         description: 'Bạn cần đăng nhập để tham gia phòng học',
         variant: 'destructive',
       });
-      return false;
+      return { success: false };
     }
 
     const { data, error } = await supabase.rpc('join_study_room', {
       p_room_id: roomId,
+      p_password: password || null,
     });
 
     if (error) {
@@ -142,7 +146,7 @@ export function useStudyRooms() {
       return false;
     }
 
-    const result = data as RpcResponse;
+    const result = data as RpcResponse & { has_password?: boolean };
     
     if (!result.success) {
       const errorMessages: Record<string, string> = {
@@ -151,6 +155,7 @@ export function useStudyRooms() {
         ROOM_CLOSED: 'Phòng học đã đóng',
         ALREADY_IN_ROOM: 'Bạn đã ở trong phòng này',
         ROOM_FULL: 'Phòng học đã đầy',
+        PASSWORD_REQUIRED: 'Cần mật khẩu để tham gia phòng',
       };
       
       // Don't show error if already in room (that's fine)
@@ -161,10 +166,16 @@ export function useStudyRooms() {
           variant: 'destructive',
         });
       }
-      return result.error === 'ALREADY_IN_ROOM';
+      
+      // Return special response for password requirement
+      if (result.error === 'PASSWORD_REQUIRED') {
+        return { success: false, needsPassword: true };
+      }
+      
+      return { success: result.error === 'ALREADY_IN_ROOM' };
     }
 
-    return true;
+    return { success: true };
   };
 
   // Leave a room using RPC function

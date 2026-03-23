@@ -152,8 +152,13 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
         </div>
 
         {/* Save button */}
-        <Button variant="ghost" size="icon" onClick={handleSave}>
-          <Bookmark className="h-5 w-5" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-8 w-8 shrink-0"
+          onClick={handleSave}
+        >
+          <Bookmark className="h-4 w-4" />
         </Button>
       </div>
     );
@@ -244,7 +249,7 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
             )}
 
             {/* Footer */}
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
                 <MessageCircle className="h-4 w-4" /> {post.comment_count} bình luận
               </span>
@@ -264,10 +269,11 @@ export function PostCard({ post, viewMode = 'card' }: PostCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-auto text-muted-foreground hover:text-foreground"
+                className="ml-auto h-8 text-muted-foreground hover:text-foreground"
                 onClick={handleSave}
               >
-                <Bookmark className="h-4 w-4 mr-1" /> Lưu
+                <Bookmark className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Lưu</span>
               </Button>
             </div>
           </div>

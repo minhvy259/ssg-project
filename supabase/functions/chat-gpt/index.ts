@@ -16,25 +16,22 @@ interface RequestBody {
   stream?: boolean;
 }
 
-// Chuyển định dạng messages (kiểu OpenAI) sang contents của Gemini
-function mapMessagesToGeminiContents(
-  messages: { role: string; content: string }[],
+// Chuyển đổi messages để tương thích với Groq (OpenAI-compatible format)
+function prepareMessagesForGroq(
+  messages: { role: string; content: string }[]
 ) {
-  return messages.map((msg) => {
-    let role: "user" | "model" = "user";
-
-    if (msg.role === "assistant") {
-      role = "model";
-    } else if (msg.role === "system") {
-      // Đưa system prompt vào như user context
-      role = "user";
+  const result: { role: string; content: string }[] = [];
+  
+  for (const msg of messages) {
+    if (msg.role === "system") {
+      // Groq hỗ trợ system prompt trực tiếp
+      result.push({ role: "system", content: msg.content });
+    } else if (msg.role === "user" || msg.role === "assistant") {
+      result.push({ role: msg.role, content: msg.content });
     }
-
-    return {
-      role,
-      parts: [{ text: msg.content }],
-    };
-  });
+  }
+  
+  return result;
 }
 
 serve(async (req) => {
@@ -44,86 +41,63 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = (await req.json()) as RequestBody;
-    // Danh sách models ưu tiên
-    const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
+    const { messages, stream } = (await req.json()) as RequestBody;
 
     // Validate messages
     if (!messages || messages.length === 0) {
       throw new Error("Messages array is required");
     }
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("GROQ_API_KEY");
     if (!apiKey) {
-      throw new Error("Gemini API key not configured");
+      throw new Error("Groq API key not configured. Please set GROQ_API_KEY in Supabase secrets.");
     }
 
-    const contents = mapMessagesToGeminiContents(messages);
+    const preparedMessages = prepareMessagesForGroq(messages);
+    
+    // Sử dụng model llama-3.3-70b-versatile (mới nhất, free tier tốt)
+    const model = "llama-3.3-70b-versatile";
+    const groqUrl = "https://api.groq.com/openai/v1/chat/completions";
 
-    let lastError = "";
-    const allErrors: string[] = [];
+    const response = await fetch(groqUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: preparedMessages,
+        temperature: 0.7,
+        max_tokens: 2000,
+        stream: stream || false,
+      }),
+    });
 
-    for (const model of models) {
-      const url =
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2000,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Gemini error (${model}):`, errorText);
-
-        try {
-          const errorJson = JSON.parse(errorText);
-          lastError = errorJson.error?.message || `${response.status}: ${response.statusText}`;
-        } catch {
-          lastError = `${response.status}: ${response.statusText}`;
-        }
-
-        allErrors.push(`[${model}]: ${lastError}`);
-
-        // Nếu lỗi quota (429) hoặc model không tìm thấy (404/400), thử model tiếp theo
-        const isQuota = lastError.toLowerCase().includes("quota") || response.status === 429;
-        const isNotFound = lastError.toLowerCase().includes("not found") || response.status === 404 || response.status === 400;
-
-        if (isQuota || isNotFound) {
-          console.log(`Model ${model} failed, trying next...`);
-          continue;
-        }
-
-        // Lỗi khác (401, 500...) thì throw ngay, ví dụ 401 là sai key
-        throw new Error(`API Error (${model}): ` + lastError);
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMsg = `Groq API error: ${response.status}`;
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMsg = errorJson.error?.message || errorMsg;
+      } catch {
+        errorMsg += ` - ${errorText}`;
       }
-
-      const data = await response.json();
-      const candidates = data.candidates ?? [];
-      const first = candidates[0];
-
-      const message =
-        first?.content?.parts?.map((p: { text?: string }) => p.text || "")
-          .join("") ?? "";
-
-      const tokens = message.length;
-
-      return new Response(JSON.stringify({ message, tokens }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      
+      throw new Error(errorMsg);
     }
 
-    // Nếu tất cả models đều lỗi
-    throw new Error(allErrors.join(" | ") || "All Gemini models failed");
+    const data = await response.json();
+    
+    // Xử lý response
+    const message = data.choices?.[0]?.message?.content || "";
+    const tokens = data.usage?.total_tokens || message.length;
+
+    return new Response(JSON.stringify({ message, tokens }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   } catch (error) {
     console.error("Error:", error);
 

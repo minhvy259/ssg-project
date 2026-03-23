@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, Moon, Sun, BookOpen, LogOut } from "lucide-react";
+import { Menu, X, Moon, Sun, BookOpen, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,13 +14,24 @@ const navLinks = [
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    // Check system preference on initial load
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle("dark");
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    if (newIsDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   };
 
   const handleSignOut = async () => {
@@ -86,12 +97,14 @@ export const Navbar = () => {
                 )}
               </Button>
 
-              <Button variant="ghost" size="icon" className="hidden md:flex">
-                <Globe className="w-5 h-5" />
-              </Button>
-
               {user ? (
                 <>
+                  <Link to="/dashboard">
+                    <Button variant="ghost" className="hidden md:flex">
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
                   <span className="hidden md:flex text-sm text-muted-foreground">
                     {user.email}
                   </span>
@@ -168,15 +181,18 @@ export const Navbar = () => {
                         <Moon className="w-5 h-5" />
                       )}
                     </Button>
-                    <Button variant="ghost" size="icon">
-                      <Globe className="w-5 h-5" />
-                    </Button>
                   </div>
                   {user ? (
-                    <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Đăng xuất
-                    </Button>
+                    <>
+                      <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground py-2 transition-colors" onClick={() => setIsOpen(false)}>
+                        <LayoutDashboard className="w-4 h-4 mr-2 inline" />
+                        Dashboard
+                      </Link>
+                      <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Đăng xuất
+                      </Button>
+                    </>
                   ) : (
                     <>
                       <Button variant="ghost" className="justify-start" asChild>

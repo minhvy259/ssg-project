@@ -10,17 +10,38 @@ interface RoomChatProps {
 }
 
 export function RoomChat({ roomId, canChat }: RoomChatProps) {
-  const { messages, loading, sending, sendMessage } = useRoomMessages({ roomId });
+  const { messages, loading, sending, sendMessage, error, typingUsers, seenMessageId, setTyping, markAsSeen } = useRoomMessages({ roomId });
   const [input, setInput] = useState('');
   const listRef = useRef<HTMLDivElement | null>(null);
+  const prevMessagesLengthRef = useRef(0);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (!listRef.current) return;
-    listRef.current.scrollTop = listRef.current.scrollHeight;
+    if (messages.length > prevMessagesLengthRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+    prevMessagesLengthRef.current = messages.length;
   }, [messages.length]);
+
+  // Mark last message as seen when it appears
+  useEffect(() => {
+    if (messages.length > 0 && canChat) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage) {
+        markAsSeen(lastMessage.id);
+      }
+    }
+  }, [messages, canChat, markAsSeen]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+    setTyping(true);
+  };
 
   const handleSend = async () => {
     if (!input.trim() || !canChat) return;
+    setTyping(false);
     await sendMessage(input);
     setInput('');
   };
@@ -52,34 +73,55 @@ export function RoomChat({ roomId, canChat }: RoomChatProps) {
             Hãy gửi tin nhắn đầu tiên để bắt đầu cuộc trò chuyện ✨
           </div>
         ) : (
-          messages.map((m) => (
-            <div key={m.id} className="flex flex-col">
-              <div className="flex items-baseline gap-2">
-                <span className="font-medium text-xs">
-                  {m.sender_name ?? 'Ẩn danh'}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {new Date(m.created_at).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
+          messages.map((m, idx) => {
+            const isLastMessage = idx === messages.length - 1;
+            return (
+              <div key={m.id} className="flex flex-col group">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-medium text-xs">
+                    {m.sender_name ?? 'Ẩn danh'}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {new Date(m.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  {isLastMessage && (
+                    <span className="text-[10px] text-green-500 ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                      Đã xem
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-foreground break-words">
+                  {m.content}
+                </div>
               </div>
-              <div className="text-sm text-foreground break-words">
-                {m.content}
-              </div>
-            </div>
-          ))
+            );
+          })
+        )}
+
+        {/* Typing indicator */}
+        {typingUsers.length > 0 && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+            <span>{typingUsers.join(', ')}</span>
+            {typingUsers.length === 1 ? 'đang nhập...' : 'đang nhập tin nhắn...'}
+          </div>
         )}
       </div>
 
       <div className="mt-3 flex items-center gap-2">
+        {error && (
+          <div className="w-full text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
+            {error}
+          </div>
+        )}
         <Input
           placeholder={
             canChat ? 'Nhắn gì đó để động viên mọi người...' : 'Đăng nhập để tham gia chat'
           }
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           disabled={!canChat || sending}
         />

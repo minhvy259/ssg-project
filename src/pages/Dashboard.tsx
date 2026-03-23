@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { useTodayTasks } from '@/hooks/useTodayTasks';
+import { TodayTasksSection } from '@/components/dashboard/TodayTasksSection';
 import { 
   LogOut, 
   Flame, 
@@ -15,21 +17,16 @@ import {
 } from 'lucide-react';
 
 const quickActions = [
-  { icon: BookOpen, label: 'Học bài', color: 'bg-primary/10 text-primary' },
-  { icon: Users, label: 'Study Room', color: 'bg-secondary/10 text-secondary' },
-  { icon: MessageSquare, label: 'AI Chatbot', color: 'bg-accent/10 text-accent' },
-  { icon: Trophy, label: 'Leaderboard', color: 'bg-primary/10 text-primary' },
-];
-
-const todayTasks = [
-  { task: 'Học 20 từ vựng tiếng Anh', done: false },
-  { task: 'Đọc 1 chương sách', done: false },
-  { task: 'Luyện Speaking 15 phút', done: false },
+  { icon: BookOpen, label: 'Học bài', href: '/forum', color: 'bg-primary/10 text-primary' },
+  { icon: Users, label: 'Study Room', href: '/study-room', color: 'bg-secondary/10 text-secondary' },
+  { icon: MessageSquare, label: 'AI Chatbot', href: '/chat', color: 'bg-accent/10 text-accent' },
+  { icon: Trophy, label: 'Leaderboard', href: '/forum', color: 'bg-primary/10 text-primary' },
 ];
 
 export default function Dashboard() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const todayTasks = useTodayTasks(user?.id);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -130,8 +127,8 @@ export default function Dashboard() {
                 </div>
                 <span className="text-sm text-muted-foreground">Mục tiêu</span>
               </div>
-              <div className="font-display text-3xl font-bold">0/3</div>
-              <div className="text-xs text-muted-foreground">hoàn thành hôm nay</div>
+              <div className="font-display text-3xl font-bold">{todayTasks.progressPercent}%</div>
+              <div className="text-xs text-muted-foreground">hoàn thành hôm nay ({todayTasks.completedCount}/{todayTasks.totalCount || 0})</div>
             </div>
 
             <div className="glass-card p-5 rounded-2xl">
@@ -156,43 +153,33 @@ export default function Dashboard() {
             <h3 className="font-display font-semibold mb-4">Truy cập nhanh</h3>
             <div className="grid grid-cols-2 gap-3">
               {quickActions.map((action, i) => (
-                <button
+                <Link
                   key={i}
+                  to={action.href}
                   className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${action.color}`}>
                     <action.icon className="w-5 h-5" />
                   </div>
                   <span className="text-xs font-medium">{action.label}</span>
-                </button>
+                </Link>
               ))}
             </div>
           </motion.div>
         </div>
 
         {/* Today's Tasks */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-6 glass-card p-6 rounded-2xl"
-        >
-          <h3 className="font-display font-semibold mb-4">Nhiệm vụ hôm nay</h3>
-          <div className="space-y-3">
-            {todayTasks.map((item, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-4 rounded-xl bg-muted/50"
-              >
-                <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
-                <span>{item.task}</span>
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-muted-foreground mt-6 text-sm">
-            Tính năng nhiệm vụ đang được phát triển 🚀
-          </p>
-        </motion.div>
+        <div className="mt-6">
+          <TodayTasksSection
+            tasks={todayTasks.tasks}
+            addTask={todayTasks.addTask}
+            toggleTask={todayTasks.toggleTask}
+            removeTask={todayTasks.removeTask}
+            completedCount={todayTasks.completedCount}
+            totalCount={todayTasks.totalCount}
+            progressPercent={todayTasks.progressPercent}
+          />
+        </div>
       </main>
     </div>
   );

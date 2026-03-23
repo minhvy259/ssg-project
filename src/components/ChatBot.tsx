@@ -30,9 +30,16 @@ export const ChatBot = ({ conversationId }: { conversationId?: string }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll to bottom when new messages arrive
+  // Chỉ cuộn bên trong khung chat — KHÔNG dùng scrollIntoView (sẽ kéo cả window xuống giữa trang)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const root = scrollAreaRef.current;
+    if (!root) return;
+    const viewport = root.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+    }
   }, [messages, isTyping]);
 
   const handleSend = async () => {
