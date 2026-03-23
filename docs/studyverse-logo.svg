@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="studyverse-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22c1c3"/>
+      <stop offset="100%" stop-color="#0abf83"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="416" height="416" rx="120" fill="url(#studyverse-gradient)"/>
+  <g transform="translate(96,120)" fill="white">
+    <path d="M80 40C62 40 48 54 48 72V232C48 236.418 51.582 240 56 240C57.682 240 59.329 239.578 60.8 238.784L144 194.667L227.2 238.784C228.671 239.578 230.318 240 232 240C236.418 240 240 236.418 240 232V72C240 54 226 40 208 40H80Z" opacity="0.95"/>
+    <path d="M88 56C72.536 56 60 68.536 60 84V206.667L144 162.667L228 206.667V84C228 68.536 215.464 56 200 56H88Z" opacity="0.9"/>
+  </g>
+</svg>
